@@ -1,0 +1,854 @@
+{
+	"_type": "Project",
+	"_id": "AAAAAAP_PROJ",
+	"name": "Location",
+	"ownedElements": [
+		{
+			"_type": "UMLModel",
+			"_id": "AAAAAAP_MODEL",
+			"_parent": {
+				"$ref": "AAAAAAP_PROJ"
+			},
+			"name": "Logical View",
+			"ownedElements": [
+				{
+					"_type": "UMLClassDiagram",
+					"_id": "AAAAAAP_DIAG",
+					"_parent": {
+						"$ref": "AAAAAAP_MODEL"
+					},
+					"name": "Main",
+					"defaultDiagram": true,
+					"ownedViews": [
+						{
+							"_type": "UMLPackageView",
+							"_id": "PKV",
+							"_parent": {
+								"$ref": "AAAAAAP_DIAG"
+							},
+							"model": {
+								"$ref": "AAAAAAP_PKG"
+							},
+							"subViews": [
+								{
+									"_type": "UMLNameCompartmentView",
+									"_id": "PKV_NC",
+									"_parent": {
+										"$ref": "PKV"
+									},
+									"model": {
+										"$ref": "AAAAAAP_PKG"
+									},
+									"subViews": [
+										{
+											"_type": "LabelView",
+											"_id": "PKV_NC_ST",
+											"_parent": {
+												"$ref": "PKV_NC"
+											},
+											"visible": false,
+											"font": "Arial;13;0",
+											"horizontalAlignment": 2,
+											"verticalAlignment": 5
+										},
+										{
+											"_type": "LabelView",
+											"_id": "PKV_NC_NM",
+											"_parent": {
+												"$ref": "PKV_NC"
+											},
+											"font": "Arial;13;1",
+											"horizontalAlignment": 2,
+											"verticalAlignment": 5
+										},
+										{
+											"_type": "LabelView",
+											"_id": "PKV_NC_NS",
+											"_parent": {
+												"$ref": "PKV_NC"
+											},
+											"visible": false,
+											"font": "Arial;13;0",
+											"horizontalAlignment": 2,
+											"verticalAlignment": 5
+										}
+									],
+									"stereotypeLabel": {
+										"$ref": "PKV_NC_ST"
+									},
+									"nameLabel": {
+										"$ref": "PKV_NC_NM"
+									},
+									"namespaceLabel": {
+										"$ref": "PKV_NC_NS"
+									},
+									"font": "Arial;13;0"
+								}
+							],
+							"left": 40,
+							"top": 30,
+							"width": 620,
+							"height": 330,
+							"nameCompartment": {
+								"$ref": "PKV_NC"
+							},
+							"font": "Arial;13;0"
+						},
+						{
+							"_type": "UMLClassView",
+							"_id": "CV",
+							"_parent": {
+								"$ref": "AAAAAAP_DIAG"
+							},
+							"model": {
+								"$ref": "AAAAAAP_CLI"
+							},
+							"subViews": [
+								{
+									"_type": "UMLNameCompartmentView",
+									"_id": "CV_NC",
+									"_parent": {
+										"$ref": "CV"
+									},
+									"model": {
+										"$ref": "AAAAAAP_CLI"
+									},
+									"subViews": [
+										{
+											"_type": "LabelView",
+											"_id": "CV_NC_ST",
+											"_parent": {
+												"$ref": "CV_NC"
+											},
+											"visible": false,
+											"font": "Arial;13;0",
+											"horizontalAlignment": 2,
+											"verticalAlignment": 5
+										},
+										{
+											"_type": "LabelView",
+											"_id": "CV_NC_NM",
+											"_parent": {
+												"$ref": "CV_NC"
+											},
+											"font": "Arial;13;1",
+											"horizontalAlignment": 2,
+											"verticalAlignment": 5
+										},
+										{
+											"_type": "LabelView",
+											"_id": "CV_NC_NS",
+											"_parent": {
+												"$ref": "CV_NC"
+											},
+											"visible": false,
+											"font": "Arial;13;0",
+											"horizontalAlignment": 2,
+											"verticalAlignment": 5
+										}
+									],
+									"stereotypeLabel": {
+										"$ref": "CV_NC_ST"
+									},
+									"nameLabel": {
+										"$ref": "CV_NC_NM"
+									},
+									"namespaceLabel": {
+										"$ref": "CV_NC_NS"
+									},
+									"font": "Arial;13;0"
+								},
+								{
+									"_type": "UMLAttributeCompartmentView",
+									"_id": "CV_AC",
+									"_parent": {
+										"$ref": "CV"
+									},
+									"model": {
+										"$ref": "AAAAAAP_CLI"
+									},
+									"subViews": [
+										{
+											"_type": "UMLAttributeView",
+											"_id": "CV_AV0",
+											"_parent": {
+												"$ref": "CV_AC"
+											},
+											"model": {
+												"$ref": "C_A1"
+											},
+											"font": "Arial;13;0",
+											"horizontalAlignment": 0,
+											"verticalAlignment": 5
+										},
+										{
+											"_type": "UMLAttributeView",
+											"_id": "CV_AV1",
+											"_parent": {
+												"$ref": "CV_AC"
+											},
+											"model": {
+												"$ref": "C_A2"
+											},
+											"font": "Arial;13;0",
+											"horizontalAlignment": 0,
+											"verticalAlignment": 5
+										}
+									],
+									"font": "Arial;13;0"
+								},
+								{
+									"_type": "UMLOperationCompartmentView",
+									"_id": "CV_OC",
+									"_parent": {
+										"$ref": "CV"
+									},
+									"model": {
+										"$ref": "AAAAAAP_CLI"
+									},
+									"subViews": [
+										{
+											"_type": "UMLOperationView",
+											"_id": "CV_OV0",
+											"_parent": {
+												"$ref": "CV_OC"
+											},
+											"model": {
+												"$ref": "C_O1"
+											},
+											"font": "Arial;13;0",
+											"horizontalAlignment": 0,
+											"verticalAlignment": 5
+										}
+									],
+									"font": "Arial;13;0"
+								}
+							],
+							"left": 80,
+							"top": 80,
+							"width": 180,
+							"height": 140,
+							"nameCompartment": {
+								"$ref": "CV_NC"
+							},
+							"attributeCompartment": {
+								"$ref": "CV_AC"
+							},
+							"operationCompartment": {
+								"$ref": "CV_OC"
+							},
+							"font": "Arial;13;0"
+						},
+						{
+							"_type": "UMLClassView",
+							"_id": "VV",
+							"_parent": {
+								"$ref": "AAAAAAP_DIAG"
+							},
+							"model": {
+								"$ref": "AAAAAAP_VEH"
+							},
+							"subViews": [
+								{
+									"_type": "UMLNameCompartmentView",
+									"_id": "VV_NC",
+									"_parent": {
+										"$ref": "VV"
+									},
+									"model": {
+										"$ref": "AAAAAAP_VEH"
+									},
+									"subViews": [
+										{
+											"_type": "LabelView",
+											"_id": "VV_NC_ST",
+											"_parent": {
+												"$ref": "VV_NC"
+											},
+											"visible": false,
+											"font": "Arial;13;0",
+											"horizontalAlignment": 2,
+											"verticalAlignment": 5
+										},
+										{
+											"_type": "LabelView",
+											"_id": "VV_NC_NM",
+											"_parent": {
+												"$ref": "VV_NC"
+											},
+											"font": "Arial;13;1",
+											"horizontalAlignment": 2,
+											"verticalAlignment": 5
+										},
+										{
+											"_type": "LabelView",
+											"_id": "VV_NC_NS",
+											"_parent": {
+												"$ref": "VV_NC"
+											},
+											"visible": false,
+											"font": "Arial;13;0",
+											"horizontalAlignment": 2,
+											"verticalAlignment": 5
+										}
+									],
+									"stereotypeLabel": {
+										"$ref": "VV_NC_ST"
+									},
+									"nameLabel": {
+										"$ref": "VV_NC_NM"
+									},
+									"namespaceLabel": {
+										"$ref": "VV_NC_NS"
+									},
+									"font": "Arial;13;0"
+								},
+								{
+									"_type": "UMLAttributeCompartmentView",
+									"_id": "VV_AC",
+									"_parent": {
+										"$ref": "VV"
+									},
+									"model": {
+										"$ref": "AAAAAAP_VEH"
+									},
+									"subViews": [
+										{
+											"_type": "UMLAttributeView",
+											"_id": "VV_AV0",
+											"_parent": {
+												"$ref": "VV_AC"
+											},
+											"model": {
+												"$ref": "V_A1"
+											},
+											"font": "Arial;13;0",
+											"horizontalAlignment": 0,
+											"verticalAlignment": 5
+										},
+										{
+											"_type": "UMLAttributeView",
+											"_id": "VV_AV1",
+											"_parent": {
+												"$ref": "VV_AC"
+											},
+											"model": {
+												"$ref": "V_A2"
+											},
+											"font": "Arial;13;0",
+											"horizontalAlignment": 0,
+											"verticalAlignment": 5
+										},
+										{
+											"_type": "UMLAttributeView",
+											"_id": "VV_AV2",
+											"_parent": {
+												"$ref": "VV_AC"
+											},
+											"model": {
+												"$ref": "V_A3"
+											},
+											"font": "Arial;13;0",
+											"horizontalAlignment": 0,
+											"verticalAlignment": 5
+										},
+										{
+											"_type": "UMLAttributeView",
+											"_id": "VV_AV3",
+											"_parent": {
+												"$ref": "VV_AC"
+											},
+											"model": {
+												"$ref": "V_A4"
+											},
+											"font": "Arial;13;0",
+											"horizontalAlignment": 0,
+											"verticalAlignment": 5
+										}
+									],
+									"font": "Arial;13;0"
+								},
+								{
+									"_type": "UMLOperationCompartmentView",
+									"_id": "VV_OC",
+									"_parent": {
+										"$ref": "VV"
+									},
+									"model": {
+										"$ref": "AAAAAAP_VEH"
+									},
+									"subViews": [
+										{
+											"_type": "UMLOperationView",
+											"_id": "VV_OV0",
+											"_parent": {
+												"$ref": "VV_OC"
+											},
+											"model": {
+												"$ref": "V_O1"
+											},
+											"font": "Arial;13;0",
+											"horizontalAlignment": 0,
+											"verticalAlignment": 5
+										},
+										{
+											"_type": "UMLOperationView",
+											"_id": "VV_OV1",
+											"_parent": {
+												"$ref": "VV_OC"
+											},
+											"model": {
+												"$ref": "V_O2"
+											},
+											"font": "Arial;13;0",
+											"horizontalAlignment": 0,
+											"verticalAlignment": 5
+										}
+									],
+									"font": "Arial;13;0"
+								}
+							],
+							"left": 420,
+							"top": 170,
+							"width": 180,
+							"height": 150,
+							"nameCompartment": {
+								"$ref": "VV_NC"
+							},
+							"attributeCompartment": {
+								"$ref": "VV_AC"
+							},
+							"operationCompartment": {
+								"$ref": "VV_OC"
+							},
+							"font": "Arial;13;0"
+						},
+						{
+							"_type": "UMLAssociationView",
+							"_id": "AV",
+							"_parent": {
+								"$ref": "AAAAAAP_DIAG"
+							},
+							"model": {
+								"$ref": "AAAAAAP_ASSO"
+							},
+							"subViews": [
+								{
+									"_type": "EdgeLabelView",
+									"_id": "AV_N",
+									"_parent": {
+										"$ref": "AV"
+									},
+									"font": "Arial;13;0",
+									"alpha": 1.5707963267948966,
+									"distance": 15,
+									"edgePosition": 1,
+									"model": {
+										"$ref": "AAAAAAP_ASSO"
+									},
+									"hostEdge": {
+										"$ref": "AV"
+									},
+									"horizontalAlignment": 2,
+									"verticalAlignment": 5,
+									"visible": true
+								},
+								{
+									"_type": "EdgeLabelView",
+									"_id": "AV_S",
+									"_parent": {
+										"$ref": "AV"
+									},
+									"font": "Arial;13;0",
+									"alpha": 1.5707963267948966,
+									"distance": 15,
+									"edgePosition": 1,
+									"model": {
+										"$ref": "AAAAAAP_ASSO"
+									},
+									"visible": false,
+									"hostEdge": {
+										"$ref": "AV"
+									},
+									"horizontalAlignment": 2,
+									"verticalAlignment": 5
+								},
+								{
+									"_type": "EdgeLabelView",
+									"_id": "AV_P",
+									"_parent": {
+										"$ref": "AV"
+									},
+									"font": "Arial;13;0",
+									"alpha": 1.5707963267948966,
+									"distance": 15,
+									"edgePosition": 1,
+									"model": {
+										"$ref": "AAAAAAP_ASSO"
+									},
+									"visible": false,
+									"hostEdge": {
+										"$ref": "AV"
+									},
+									"horizontalAlignment": 2,
+									"verticalAlignment": 5
+								},
+								{
+									"_type": "EdgeLabelView",
+									"_id": "AV_E1N",
+									"_parent": {
+										"$ref": "AV"
+									},
+									"font": "Arial;13;0",
+									"alpha": 1.5707963267948966,
+									"distance": 15,
+									"edgePosition": 2,
+									"model": {
+										"$ref": "AAAAAAP_ASSO_E1"
+									},
+									"visible": false,
+									"hostEdge": {
+										"$ref": "AV"
+									},
+									"horizontalAlignment": 2,
+									"verticalAlignment": 5
+								},
+								{
+									"_type": "EdgeLabelView",
+									"_id": "AV_E1M",
+									"_parent": {
+										"$ref": "AV"
+									},
+									"font": "Arial;13;0",
+									"alpha": -0.5,
+									"distance": 20,
+									"edgePosition": 2,
+									"model": {
+										"$ref": "AAAAAAP_ASSO_E1"
+									},
+									"hostEdge": {
+										"$ref": "AV"
+									},
+									"horizontalAlignment": 2,
+									"verticalAlignment": 5,
+									"visible": true
+								},
+								{
+									"_type": "EdgeLabelView",
+									"_id": "AV_E2N",
+									"_parent": {
+										"$ref": "AV"
+									},
+									"font": "Arial;13;0",
+									"alpha": 1.5707963267948966,
+									"distance": 15,
+									"edgePosition": 0,
+									"model": {
+										"$ref": "AAAAAAP_ASSO_E2"
+									},
+									"visible": false,
+									"hostEdge": {
+										"$ref": "AV"
+									},
+									"horizontalAlignment": 2,
+									"verticalAlignment": 5
+								},
+								{
+									"_type": "EdgeLabelView",
+									"_id": "AV_E2M",
+									"_parent": {
+										"$ref": "AV"
+									},
+									"font": "Arial;13;0",
+									"alpha": 0.5,
+									"distance": 20,
+									"edgePosition": 0,
+									"model": {
+										"$ref": "AAAAAAP_ASSO_E2"
+									},
+									"hostEdge": {
+										"$ref": "AV"
+									},
+									"horizontalAlignment": 2,
+									"verticalAlignment": 5,
+									"visible": true
+								},
+								{
+									"_type": "EdgeLabelView",
+									"_id": "AV_P_E1",
+									"_parent": {
+										"$ref": "AV"
+									},
+									"model": {
+										"$ref": "AAAAAAP_ASSO_E1"
+									},
+									"visible": false,
+									"font": "Arial;13;0",
+									"alpha": 0.78,
+									"distance": 40,
+									"hostEdge": {
+										"$ref": "AV"
+									},
+									"edgePosition": 2,
+									"horizontalAlignment": 2,
+									"verticalAlignment": 5
+								},
+								{
+									"_type": "EdgeLabelView",
+									"_id": "AV_P_E2",
+									"_parent": {
+										"$ref": "AV"
+									},
+									"model": {
+										"$ref": "AAAAAAP_ASSO_E2"
+									},
+									"visible": false,
+									"font": "Arial;13;0",
+									"alpha": 0.78,
+									"distance": 40,
+									"hostEdge": {
+										"$ref": "AV"
+									},
+									"edgePosition": 0,
+									"horizontalAlignment": 2,
+									"verticalAlignment": 5
+								},
+								{
+									"_type": "UMLQualifierCompartmentView",
+									"_id": "AV_Q_E1",
+									"_parent": {
+										"$ref": "AV"
+									},
+									"model": {
+										"$ref": "AAAAAAP_ASSO_E1"
+									},
+									"visible": false,
+									"font": "Arial;13;0"
+								},
+								{
+									"_type": "UMLQualifierCompartmentView",
+									"_id": "AV_Q_E2",
+									"_parent": {
+										"$ref": "AV"
+									},
+									"model": {
+										"$ref": "AAAAAAP_ASSO_E2"
+									},
+									"visible": false,
+									"font": "Arial;13;0"
+								}
+							],
+							"head": {
+								"$ref": "VV"
+							},
+							"tail": {
+								"$ref": "CV"
+							},
+							"nameLabel": {
+								"$ref": "AV_N"
+							},
+							"stereotypeLabel": {
+								"$ref": "AV_S"
+							},
+							"propertyLabel": {
+								"$ref": "AV_P"
+							},
+							"tailRoleNameLabel": {
+								"$ref": "AV_E1N"
+							},
+							"tailMultiplicityLabel": {
+								"$ref": "AV_E1M"
+							},
+							"headRoleNameLabel": {
+								"$ref": "AV_E2N"
+							},
+							"headMultiplicityLabel": {
+								"$ref": "AV_E2M"
+							},
+							"font": "Arial;13;0",
+							"lineStyle": 1,
+							"points": "443:220;594:290",
+							"tailQualifiersCompartment": {
+								"$ref": "AV_Q_E1"
+							},
+							"headQualifiersCompartment": {
+								"$ref": "AV_Q_E2"
+							},
+							"tailPropertyLabel": {
+								"$ref": "AV_P_E1"
+							},
+							"headPropertyLabel": {
+								"$ref": "AV_P_E2"
+							},
+							"stereotypeDisplay": "label",
+							"showVisibility": true,
+							"showProperty": true,
+							"showMultiplicity": true,
+							"showType": true
+						}
+					]
+				},
+				{
+					"_type": "UMLPackage",
+					"_id": "AAAAAAP_PKG",
+					"_parent": {
+						"$ref": "AAAAAAP_MODEL"
+					},
+					"name": "modele",
+					"ownedElements": [
+						{
+							"_type": "UMLClass",
+							"_id": "AAAAAAP_CLI",
+							"_parent": {
+								"$ref": "AAAAAAP_PKG"
+							},
+							"name": "Client",
+							"ownedElements": [
+								{
+									"_type": "UMLAssociation",
+									"_id": "AAAAAAP_ASSO",
+									"_parent": {
+										"$ref": "AAAAAAP_CLI"
+									},
+									"name": "louer",
+									"visibility": "public",
+									"end1": {
+										"_type": "UMLAssociationEnd",
+										"_id": "AAAAAAP_ASSO_E1",
+										"_parent": {
+											"$ref": "AAAAAAP_ASSO"
+										},
+										"reference": {
+											"$ref": "AAAAAAP_CLI"
+										},
+										"multiplicity": "0..1",
+										"visibility": "public",
+										"navigable": "unspecified",
+										"aggregation": "none"
+									},
+									"end2": {
+										"_type": "UMLAssociationEnd",
+										"_id": "AAAAAAP_ASSO_E2",
+										"_parent": {
+											"$ref": "AAAAAAP_ASSO"
+										},
+										"reference": {
+											"$ref": "AAAAAAP_VEH"
+										},
+										"multiplicity": "0..*",
+										"visibility": "public",
+										"navigable": "unspecified",
+										"aggregation": "none"
+									}
+								}
+							],
+							"attributes": [
+								{
+									"_type": "UMLAttribute",
+									"_id": "C_A1",
+									"_parent": {
+										"$ref": "AAAAAAP_CLI"
+									},
+									"name": "id",
+									"visibility": "private",
+									"type": "int"
+								},
+								{
+									"_type": "UMLAttribute",
+									"_id": "C_A2",
+									"_parent": {
+										"$ref": "AAAAAAP_CLI"
+									},
+									"name": "nom",
+									"visibility": "private",
+									"type": "string"
+								}
+							],
+							"operations": [
+								{
+									"_type": "UMLOperation",
+									"_id": "C_O1",
+									"_parent": {
+										"$ref": "AAAAAAP_CLI"
+									},
+									"name": "louer",
+									"visibility": "public"
+								}
+							]
+						},
+						{
+							"_type": "UMLClass",
+							"_id": "AAAAAAP_VEH",
+							"_parent": {
+								"$ref": "AAAAAAP_PKG"
+							},
+							"name": "Vehicule",
+							"attributes": [
+								{
+									"_type": "UMLAttribute",
+									"_id": "V_A1",
+									"_parent": {
+										"$ref": "AAAAAAP_VEH"
+									},
+									"name": "matricule",
+									"visibility": "private",
+									"type": "string"
+								},
+								{
+									"_type": "UMLAttribute",
+									"_id": "V_A2",
+									"_parent": {
+										"$ref": "AAAAAAP_VEH"
+									},
+									"name": "marque",
+									"visibility": "private",
+									"type": "string"
+								},
+								{
+									"_type": "UMLAttribute",
+									"_id": "V_A3",
+									"_parent": {
+										"$ref": "AAAAAAP_VEH"
+									},
+									"name": "annee",
+									"visibility": "private",
+									"type": "int"
+								},
+								{
+									"_type": "UMLAttribute",
+									"_id": "V_A4",
+									"_parent": {
+										"$ref": "AAAAAAP_VEH"
+									},
+									"name": "dispo",
+									"visibility": "private",
+									"type": "bool"
+								}
+							],
+							"operations": [
+								{
+									"_type": "UMLOperation",
+									"_id": "V_O1",
+									"_parent": {
+										"$ref": "AAAAAAP_VEH"
+									},
+									"name": "setDispo",
+									"visibility": "public"
+								},
+								{
+									"_type": "UMLOperation",
+									"_id": "V_O2",
+									"_parent": {
+										"$ref": "AAAAAAP_VEH"
+									},
+									"name": "getDispo",
+									"visibility": "public"
+								}
+							]
+						}
+					]
+				}
+			]
+		}
+	]
+}
