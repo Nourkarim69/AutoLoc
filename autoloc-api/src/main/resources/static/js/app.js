@@ -6,6 +6,8 @@ const CATEGORIES = { CITADINE: "Citadine", BERLINE: "Berline", SUV: "SUV", UTILI
 const STATUTS = { DISPONIBLE: "Disponible", LOUE: "Loué", MAINTENANCE: "Maintenance" };
 const STATUTS_RESA = { EN_ATTENTE: "En attente", CONFIRMEE: "Confirmée", ANNULEE: "Annulée", TERMINEE: "Terminée" };
 const ACTIVES = ["EN_ATTENTE", "CONFIRMEE"];
+const MODES_PAIEMENT = { CARTE: "Carte bancaire", ESPECES: "Espèces", VIREMENT: "Virement" };
+const ROLES = { AGENT: "Agent", MANAGER: "Manager" };
 const CAR_COLORS = { CITADINE: "#10b981", BERLINE: "#0f766e", SUV: "#65a30d", UTILITAIRE: "#d97706" };
 
 const app = document.getElementById("app");
@@ -160,6 +162,7 @@ function vehicleCard(v) {
             <div class="vcard-meta">
                 <span class="chip">${esc(CATEGORIES[v.categorie] || v.categorie)}</span>
                 <span class="chip plate">${esc(v.immatriculation)}</span>
+                ${v.agence ? `<span class="chip">📍 ${esc(v.agence.ville)}</span>` : ""}
             </div>
             <div class="vcard-foot">
                 <span class="price">${euro(v.tarifJournalier)} <small>/ jour</small></span>
@@ -187,7 +190,7 @@ function showVehicleDetail(v) {
             <div><span>Catégorie</span><strong>${esc(CATEGORIES[v.categorie])}</strong></div>
             <div><span>Immatriculation</span><strong>${esc(v.immatriculation)}</strong></div>
             <div><span>Tarif journalier</span><strong>${euro(v.tarifJournalier)}</strong></div>
-            <div><span>Référence</span><strong>#${v.idVehicule}</strong></div>
+            <div><span>Agence de retrait</span><strong>${v.agence ? esc(v.agence.nom) : "—"}</strong></div>
         </div>
         ${dispo
             ? `<a class="btn btn-primary" style="width:100%" href="#/reserver?vehicule=${v.idVehicule}">Réserver ce véhicule</a>`
@@ -388,7 +391,8 @@ async function pageReserver(params) {
     const pre = {
         vehicule: params.get("vehicule") || draft.vehicule || "",
         debut: params.get("debut") || draft.debut || isoDate(addDays(new Date(), 1)),
-        fin: params.get("fin") || draft.fin || isoDate(addDays(new Date(), 4))
+        fin: params.get("fin") || draft.fin || isoDate(addDays(new Date(), 4)),
+        options: draft.options || []
     };
 
     app.innerHTML = `<div class="container">
@@ -396,8 +400,8 @@ async function pageReserver(params) {
             <p class="muted">Choisissez votre véhicule et vos dates : le prix s'affiche immédiatement.</p></div>
         <div id="booking">${loading()}</div></div>`;
 
-    let vehicules;
-    try { vehicules = await api.get("/api/vehicules"); }
+    let vehicules, equipements;
+    try { [vehicules, equipements] = await Promise.all([api.get("/api/vehicules"), api.get("/api/equipements")]); }
     catch (err) { document.getElementById("booking").innerHTML = errorBox(err); return; }
 
     document.getElementById("booking").innerHTML = `<div class="booking">
@@ -414,7 +418,13 @@ async function pageReserver(params) {
                 ${field("dateFin", "Date de retour du véhicule", "date", pre.fin, `required`)}
             </div>
             <div id="booked"></div>
-            <div class="step" style="margin-top:22px"><span class="step-num">3</span><h2 style="margin:0">Confirmation</h2></div>
+            <div class="step" style="margin-top:22px"><span class="step-num">3</span><h2 style="margin:0">Options</h2></div>
+            <div class="options-grid">${equipements.length ? equipements.map(e => `
+                <label class="option">
+                    <input type="checkbox" name="opt" value="${e.idEquipement}" ${pre.options.map(String).includes(String(e.idEquipement)) ? "checked" : ""}>
+                    <span>${esc(e.libelle)}</span><strong>+ ${euro(e.tarifJournalier)}/jour</strong>
+                </label>`).join("") : `<p class="muted">Aucune option disponible.</p>`}</div>
+            <div class="step" style="margin-top:22px"><span class="step-num">4</span><h2 style="margin:0">Confirmation</h2></div>
             <div id="login-hint"></div>
             <div class="form-actions" style="justify-content:flex-start">
                 <button class="btn btn-primary" type="submit" id="book-btn">Confirmer la réservation</button>
@@ -435,6 +445,8 @@ async function pageReserver(params) {
     }
 
     const overlaps = () => booked.filter(b => b.dateDebut < d2.value && b.dateFin > d1.value);
+    const chosenOptions = () => [...form.querySelectorAll("input[name=opt]:checked")]
+        .map(c => equipements.find(e => String(e.idEquipement) === c.value)).filter(Boolean);
 
     const renderSummary = () => {
         const v = vehicules.find(x => String(x.idVehicule) === sel.value);
@@ -446,6 +458,8 @@ async function pageReserver(params) {
             return;
         }
         const conflicts = overlaps();
+        const opts = chosenOptions();
+        const parJour = Number(v.tarifJournalier) + opts.reduce((t, e) => t + Number(e.tarifJournalier), 0);
         box.innerHTML = `
             <div class="summary-media media-${esc(v.categorie)}">${carSvg(v.categorie)}</div>
             <div class="summary-body">
@@ -455,9 +469,11 @@ async function pageReserver(params) {
                     <div class="summary-line"><span class="muted">Prise</span><strong>${fmtDate(d1.value)}</strong></div>
                     <div class="summary-line"><span class="muted">Retour</span><strong>${fmtDate(d2.value)}</strong></div>
                     <div class="summary-line"><span class="muted">Durée</span><strong>${days > 0 ? plural(days, "jour") : "—"}</strong></div>
-                    <div class="summary-line"><span class="muted">Tarif</span><strong>${euro(v.tarifJournalier)} / jour</strong></div>
+                    ${v.agence ? `<div class="summary-line"><span class="muted">Agence</span><strong>${esc(v.agence.nom)}</strong></div>` : ""}
+                    <div class="summary-line"><span class="muted">Véhicule</span><strong>${euro(v.tarifJournalier)} / jour</strong></div>
+                    ${opts.map(e => `<div class="summary-line"><span class="muted">${esc(e.libelle)}</span><strong>+ ${euro(e.tarifJournalier)} / jour</strong></div>`).join("")}
                 </div>
-                <div class="summary-total"><span>Total</span><strong>${days > 0 ? euro(days * Number(v.tarifJournalier)) : "—"}</strong></div>
+                <div class="summary-total"><span>Total</span><strong>${days > 0 ? euro(days * parJour) : "—"}</strong></div>
                 ${days <= 0 && d1.value && d2.value ? `<p class="notice notice-ko">La date de retour doit être après la date de prise.</p>` : ""}
                 ${conflicts.length ? `<p class="notice notice-ko">Déjà réservé du ${fmtDate(conflicts[0].dateDebut)} au ${fmtDate(conflicts[0].dateFin)}. Choisissez d'autres dates.</p>` : ""}
             </div>`;
@@ -485,13 +501,15 @@ async function pageReserver(params) {
         renderSummary();
     });
     d2.addEventListener("input", renderSummary);
+    form.querySelectorAll("input[name=opt]").forEach(c => c.addEventListener("change", renderSummary));
     await loadBooked();
 
     form.addEventListener("submit", async e => {
         e.preventDefault();
-        const payload = { idVehicule: sel.value ? Number(sel.value) : null, dateDebut: d1.value || null, dateFin: d2.value || null };
+        const options = chosenOptions().map(e => e.idEquipement);
+        const payload = { idVehicule: sel.value ? Number(sel.value) : null, dateDebut: d1.value || null, dateFin: d2.value || null, idEquipements: options };
         if (!state.user) {
-            saveDraft({ vehicule: sel.value, debut: d1.value, fin: d2.value });
+            saveDraft({ vehicule: sel.value, debut: d1.value, fin: d2.value, options });
             location.hash = "#/connexion?next=reserver";
             return;
         }
@@ -502,7 +520,7 @@ async function pageReserver(params) {
             toast(`Réservation n°${r.idReservation} enregistrée — ${euro(r.montantTotal)}`, "ok");
             location.hash = "#/client";
         } catch (err) {
-            if (err.status === 401) { saveDraft({ vehicule: sel.value, debut: d1.value, fin: d2.value }); location.hash = "#/connexion?next=reserver"; return; }
+            if (err.status === 401) { saveDraft({ vehicule: sel.value, debut: d1.value, fin: d2.value, options }); location.hash = "#/connexion?next=reserver"; return; }
             showFormErrors(form, err);
             btn.disabled = false;
             loadBooked();
@@ -615,6 +633,8 @@ function pageConnexion(params) {
 }
 
 // ---------- Client space ----------
+let clientTab = "reservations";
+
 async function pageClient() {
     if (!requireLogin("CLIENT", "client")) return;
     const u = state.user;
@@ -625,14 +645,26 @@ async function pageClient() {
             <div class="profile-info"><strong style="font-size:1.1rem">${esc(u.prenom)} ${esc(u.nom)}</strong><br><span class="muted">${esc(u.email)}</span></div>
             <a href="#/reserver" class="btn btn-primary">+ Nouvelle réservation</a>
         </div>
-        <div class="section-head" style="margin-bottom:14px"><h2 style="font-size:1.4rem">Mes réservations</h2></div>
-        <div id="resas">${loading()}</div></div>`;
-    await renderClientResas();
+        <div class="tabs" id="ctabs"></div>
+        <div id="cbody">${loading()}</div></div>`;
+    renderClientTabs();
 }
 
+function renderClientTabs() {
+    const tabs = [["reservations", "Mes réservations"], ["contrats", "Contrats & paiements"], ["compte", "Mon compte"]];
+    document.getElementById("ctabs").innerHTML = tabs.map(([k, l]) =>
+        `<button class="tab ${clientTab === k ? "active" : ""}" data-tab="${k}">${l}</button>`).join("");
+    document.querySelectorAll("#ctabs .tab").forEach(t => t.addEventListener("click", () => { clientTab = t.dataset.tab; renderClientTabs(); }));
+    ({ reservations: renderClientResas, contrats: renderClientContrats, compte: renderCompte })[clientTab]();
+}
+
+const optionsText = r => r.equipements?.length ? r.equipements.map(e => esc(e.libelle)).join(", ") : "";
+const parJourResa = r => Number(r.vehicule.tarifJournalier) + (r.equipements || []).reduce((t, e) => t + Number(e.tarifJournalier), 0);
+
 async function renderClientResas() {
-    const box = document.getElementById("resas");
+    const box = document.getElementById("cbody");
     if (!box) return;
+    box.innerHTML = loading();
     let resas;
     try { resas = await api.get("/api/reservations/mine"); }
     catch (err) {
@@ -655,8 +687,10 @@ async function renderClientResas() {
                     <span>Prise : <strong>${fmtDate(r.dateDebut)}</strong></span>
                     <span>Retour : <strong>${fmtDate(r.dateFin)}</strong></span>
                     <span>${plural(daysBetween(r.dateDebut, r.dateFin), "jour")}</span>
+                    ${v.agence ? `<span>📍 ${esc(v.agence.nom)}</span>` : ""}
                     ${r.nbProlongations ? `<span>⏩ prolongée ${r.nbProlongations} fois</span>` : ""}
                 </div>
+                ${optionsText(r) ? `<div class="muted small" style="margin-top:6px">Options : ${optionsText(r)}</div>` : ""}
             </div>
             <div class="resa-side">
                 <span class="price">${euro(r.montantTotal)}</span>
@@ -678,9 +712,96 @@ async function renderClientResas() {
     }));
 }
 
-/** Modal to extend a rental: pick the new return day, see the extra cost. */
+async function renderClientContrats() {
+    const box = document.getElementById("cbody");
+    if (!box) return;
+    box.innerHTML = loading();
+    let contrats;
+    try { contrats = await api.get("/api/contrats/mine"); }
+    catch (err) { box.innerHTML = errorBox(err); return; }
+    if (!contrats.length) {
+        box.innerHTML = `<div class="empty">Aucun contrat pour le moment.<br><small>Un contrat est créé quand l'agence confirme votre réservation.</small></div>`;
+        return;
+    }
+    box.innerHTML = `<div class="table-wrap"><table>
+        <thead><tr><th>Contrat</th><th>Véhicule</th><th>Période</th><th>Montant</th><th>Payé</th><th>Reste</th><th>État</th><th></th></tr></thead>
+        <tbody>${contrats.map(({ contrat: c, totalPaye, resteAPayer }) => `<tr>
+            <td>#${c.idContrat}<br><span class="muted small">signé le ${fmtDate(c.dateSignature)}</span></td>
+            <td>${esc(c.reservation.vehicule.marque)} ${esc(c.reservation.vehicule.modele)}</td>
+            <td>${fmtDate(c.reservation.dateDebut)} → ${fmtDate(c.reservation.dateFin)}</td>
+            <td><strong>${euro(c.montantTotal)}</strong></td>
+            <td>${euro(totalPaye)}</td>
+            <td>${Number(resteAPayer) > 0 ? `<strong style="color:var(--warn)">${euro(resteAPayer)}</strong>` : `<span class="badge badge-CONFIRMEE">Soldé</span>`}</td>
+            <td>${c.valide ? `<span class="badge badge-CONFIRMEE">Valide</span>` : `<span class="badge badge-ANNULEE">Annulé</span>`}</td>
+            <td><div class="actions"><button class="btn btn-light btn-sm" data-pay="${c.idContrat}">Paiements</button></div></td>
+        </tr>`).join("")}</tbody></table></div>
+        <p class="muted small" style="margin-top:10px">Les paiements sont enregistrés par l'agence lors du retrait du véhicule.</p>`;
+    box.querySelectorAll("[data-pay]").forEach(b => b.addEventListener("click", () => showPaiements(Number(b.dataset.pay))));
+}
+
+async function showPaiements(idContrat, canAdd = false, onDone = null, reste = 0) {
+    openModal(`<h2>Paiements du contrat #${idContrat}</h2><div id="pay-list">${loading()}</div>
+        ${canAdd ? `<form id="payform" novalidate style="margin-top:18px">
+            <h3 style="font-size:1rem">Enregistrer un paiement</h3>
+            <div class="form-grid">
+                ${field("montant", `Montant (reste ${euro(reste)})`, "number", reste > 0 ? reste.toFixed(2) : "", `step="0.01" min="0.01" required`)}
+                ${selectField("modePaiement", "Mode de paiement", MODES_PAIEMENT, "CARTE")}
+            </div>
+            <div class="form-actions"><button class="btn btn-primary" type="submit">Enregistrer</button></div>
+        </form>` : ""}`);
+    try {
+        const list = await api.get(`/api/contrats/${idContrat}/paiements`);
+        document.getElementById("pay-list").innerHTML = list.length
+            ? list.map(p => `<div class="agency-mini"><span>${fmtDate(p.datePaiement)} · ${esc(MODES_PAIEMENT[p.modePaiement])}</span><strong>${euro(p.montant)}</strong></div>`).join("")
+            : `<p class="muted">Aucun paiement enregistré.</p>`;
+    } catch (err) { document.getElementById("pay-list").innerHTML = `<p class="muted">${esc(err.message)}</p>`; }
+    const form = document.getElementById("payform");
+    if (form) form.addEventListener("submit", async e => {
+        e.preventDefault();
+        const d = formData(form);
+        try {
+            await api.post(`/api/contrats/${idContrat}/paiements`, { montant: d.montant === "" ? null : Number(d.montant), modePaiement: d.modePaiement });
+            closeModal();
+            toast("Paiement enregistré", "ok");
+            onDone && onDone();
+        } catch (err) { showFormErrors(form, err); }
+    });
+}
+
+/** Change my password (client or admin). */
+function renderCompte(targetId = "cbody") {
+    const box = document.getElementById(targetId);
+    if (!box) return;
+    box.innerHTML = `<form class="panel" id="pwform" novalidate style="max-width:520px">
+        <h2 style="font-size:1.15rem">Changer mon mot de passe</h2>
+        ${passwordField("ancienMotDePasse", "Mot de passe actuel", `autocomplete="current-password" required`)}
+        <div style="height:10px"></div>
+        ${passwordField("nouveauMotDePasse", "Nouveau mot de passe (8 caractères min., lettres et chiffres)", `autocomplete="new-password" required`)}
+        <div style="height:10px"></div>
+        ${passwordField("confirmation", "Confirmer le nouveau mot de passe", `autocomplete="new-password" required`)}
+        <div class="form-actions"><button class="btn btn-primary" type="submit">Mettre à jour</button></div>
+        <p class="secure-note">🔒 Le nouveau mot de passe est chiffré avec BCrypt.</p>
+    </form>`;
+    const form = document.getElementById("pwform");
+    bindPasswordToggles(form);
+    form.addEventListener("submit", async e => {
+        e.preventDefault();
+        const d = formData(form);
+        if (d.nouveauMotDePasse !== d.confirmation) {
+            showFormErrors(form, { message: "Les mots de passe ne correspondent pas", errors: { confirmation: "Les mots de passe ne correspondent pas" } });
+            return;
+        }
+        try {
+            await api.patch("/api/auth/password", { ancienMotDePasse: d.ancienMotDePasse, nouveauMotDePasse: d.nouveauMotDePasse });
+            form.reset();
+            toast("Mot de passe modifié", "ok");
+        } catch (err) { showFormErrors(form, err); }
+    });
+}
+
+/** Modal to extend a rental: pick the new return day, see the extra cost (car + options). */
 function prolongForm(r, onDone) {
-    const v = r.vehicule;
+    const v = r.vehicule, parJour = parJourResa(r);
     const minFin = isoDate(addDays(parseIso(r.dateFin), 1));
     openModal(`<h2>Prolonger la location</h2>
         <p class="muted">${esc(v.marque)} ${esc(v.modele)} · retour prévu le <strong>${fmtDate(r.dateFin)}</strong></p>
@@ -702,8 +823,8 @@ function prolongForm(r, onDone) {
         const extra = input.value ? daysBetween(r.dateFin, input.value) : 0;
         const ok = extra > 0;
         document.getElementById("p-days").textContent = ok ? `+ ${plural(extra, "jour")}` : "—";
-        document.getElementById("p-extra").textContent = ok ? `+ ${euro(extra * Number(v.tarifJournalier))}` : "—";
-        document.getElementById("p-total").textContent = ok ? euro(daysBetween(r.dateDebut, input.value) * Number(v.tarifJournalier)) : "—";
+        document.getElementById("p-extra").textContent = ok ? `+ ${euro(extra * parJour)}` : "—";
+        document.getElementById("p-total").textContent = ok ? euro(daysBetween(r.dateDebut, input.value) * parJour) : "—";
         form.querySelector("button[type=submit]").disabled = !ok;
     };
     input.addEventListener("input", update);
@@ -721,6 +842,11 @@ function prolongForm(r, onDone) {
 
 // ---------- Admin ----------
 let adminTab = "reservations";
+const pages = { reservations: 0, clients: 0 };
+const ADMIN_TABS = [
+    ["reservations", "Réservations"], ["contrats", "Contrats"], ["vehicules", "Véhicules"], ["maintenances", "Maintenances"],
+    ["agences", "Agences"], ["equipements", "Équipements"], ["employes", "Employés"], ["clients", "Clients"], ["compte", "Mon compte"]
+];
 
 async function pageAdmin() {
     if (!requireLogin("ADMIN", "admin")) return;
@@ -736,55 +862,66 @@ async function pageAdmin() {
 async function renderAdmin() {
     const body = document.getElementById("admin-body");
     if (!body) return;
-    let data;
-    try {
-        const [reservations, vehicules, agences, clients] = await Promise.all(
-            ["/api/reservations", "/api/vehicules", "/api/agences", "/api/clients"].map(u => api.get(u)));
-        data = { reservations, vehicules, agences, clients };
-    } catch (err) {
-        if (err.status === 401 || err.status === 403) { location.hash = "#/connexion?next=admin"; return; }
-        body.innerHTML = errorBox(err); return;
-    }
-
-    const actives = data.reservations.filter(r => ACTIVES.includes(r.statut));
-    const ca = data.reservations.filter(r => r.statut !== "ANNULEE").reduce((s, r) => s + Number(r.montantTotal), 0);
-    document.getElementById("kpis").innerHTML = `<div class="admin-kpis">
-        <div class="stat"><div class="stat-value">${actives.length}</div><div class="stat-label">réservations en cours</div></div>
-        <div class="stat"><div class="stat-value">${data.reservations.filter(r => r.statut === "EN_ATTENTE").length}</div><div class="stat-label">à confirmer</div></div>
-        <div class="stat"><div class="stat-value">${data.clients.length}</div><div class="stat-label">clients inscrits</div></div>
-        <div class="stat"><div class="stat-value">${euro(ca)}</div><div class="stat-label">chiffre d'affaires réservé</div></div>
-    </div>`;
-
-    const tabs = [["reservations", "Réservations"], ["vehicules", "Véhicules"], ["agences", "Agences"], ["clients", "Clients"]];
-    document.getElementById("tabs").innerHTML = tabs.map(([k, l]) =>
-        `<button class="tab ${adminTab === k ? "active" : ""}" data-tab="${k}">${l}<span class="count">${data[k].length}</span></button>`).join("");
+    document.getElementById("tabs").innerHTML = ADMIN_TABS.map(([k, l]) =>
+        `<button class="tab ${adminTab === k ? "active" : ""}" data-tab="${k}">${l}</button>`).join("");
     document.querySelectorAll("#tabs .tab").forEach(t => t.addEventListener("click", () => { adminTab = t.dataset.tab; renderAdmin(); }));
 
-    ({ reservations: renderAdminResas, vehicules: renderAdminVehicules, agences: renderAdminAgences, clients: renderAdminClients })[adminTab](body, data[adminTab]);
+    try {
+        const s = await api.get("/api/admin/stats");
+        document.getElementById("kpis").innerHTML = `<div class="admin-kpis">
+            <div class="stat"><div class="stat-value">${s.reservationsEnCours}</div><div class="stat-label">réservations en cours</div></div>
+            <div class="stat"><div class="stat-value">${s.reservationsAConfirmer}</div><div class="stat-label">à confirmer</div></div>
+            <div class="stat"><div class="stat-value">${s.clients}</div><div class="stat-label">clients inscrits</div></div>
+            <div class="stat"><div class="stat-value">${euro(s.chiffreAffaires)}</div><div class="stat-label">chiffre d'affaires réservé</div></div>
+        </div>`;
+        if (adminTab === "compte") { renderCompte("admin-body"); return; }
+        body.innerHTML = loading();
+        await ({
+            reservations: adminResas, contrats: adminContrats, vehicules: adminVehicules, maintenances: adminMaintenances,
+            agences: adminAgences, equipements: adminEquipements, employes: adminEmployes, clients: adminClients
+        })[adminTab](body);
+    } catch (err) {
+        if (err.status === 401 || err.status === 403) { location.hash = "#/connexion?next=admin"; return; }
+        body.innerHTML = errorBox(err);
+    }
 }
 
-function renderAdminResas(body, resas) {
+function pager(key, p) {
+    if (p.totalPages <= 1) return "";
+    return `<div class="pager">
+        <button class="btn btn-light btn-sm" data-page="${p.page - 1}" ${p.page === 0 ? "disabled" : ""}>← Précédent</button>
+        <span class="muted small">Page ${p.page + 1} / ${p.totalPages} · ${p.totalElements} élément(s)</span>
+        <button class="btn btn-light btn-sm" data-page="${p.page + 1}" ${p.page + 1 >= p.totalPages ? "disabled" : ""}>Suivant →</button>
+    </div>`;
+}
+function bindPager(body, key) {
+    body.querySelectorAll("[data-page]").forEach(b => b.addEventListener("click", () => { pages[key] = Number(b.dataset.page); renderAdmin(); }));
+}
+const emptyRow = (cols, text) => `<tr><td colspan="${cols}" class="muted" style="text-align:center">${esc(text)}</td></tr>`;
+
+async function adminResas(body) {
+    const p = await api.get(`/api/reservations?page=${pages.reservations}&size=15`);
+    const resas = p.content;
     body.innerHTML = `
-        <div class="admin-head"><strong>${plural(resas.length, "réservation")}</strong></div>
+        <div class="admin-head"><strong>${plural(p.totalElements, "réservation")}</strong><span class="muted small">Confirmer une réservation crée automatiquement son contrat.</span></div>
         <div class="table-wrap"><table>
             <thead><tr><th>N°</th><th>Client</th><th>Véhicule</th><th>Prise</th><th>Retour</th><th>Montant</th><th>Statut</th><th></th></tr></thead>
             <tbody>${resas.length ? resas.map(r => `<tr>
                 <td>#${r.idReservation}</td>
                 <td><strong>${esc(r.client.prenom)} ${esc(r.client.nom)}</strong><br><span class="muted small">${esc(r.client.email)}</span></td>
-                <td>${esc(r.vehicule.marque)} ${esc(r.vehicule.modele)}<br><span class="muted small">${esc(r.vehicule.immatriculation)}</span></td>
+                <td>${esc(r.vehicule.marque)} ${esc(r.vehicule.modele)}<br><span class="muted small">${esc(r.vehicule.immatriculation)}${optionsText(r) ? " · " + optionsText(r) : ""}</span></td>
                 <td>${fmtDate(r.dateDebut)}</td>
                 <td>${fmtDate(r.dateFin)}${r.nbProlongations ? `<br><span class="muted small">⏩ prolongée ×${r.nbProlongations}</span>` : ""}</td>
                 <td><strong>${euro(r.montantTotal)}</strong></td>
                 <td><select class="input" data-rstatut="${r.idReservation}">${options(STATUTS_RESA, r.statut)}</select></td>
                 <td><div class="actions">${ACTIVES.includes(r.statut) ? `<button class="btn btn-light btn-sm" data-prolong="${r.idReservation}">Prolonger</button>` : ""}</div></td>
-            </tr>`).join("")
-                : `<tr><td colspan="8" class="muted" style="text-align:center">Aucune réservation pour le moment</td></tr>`}</tbody>
-        </table></div>`;
-
+            </tr>`).join("") : emptyRow(8, "Aucune réservation pour le moment")}</tbody>
+        </table></div>${pager("reservations", p)}`;
+    bindPager(body, "reservations");
     body.querySelectorAll("[data-rstatut]").forEach(s => s.addEventListener("change", async () => {
         try {
             await api.patch(`/api/reservations/${s.dataset.rstatut}/statut`, { statut: s.value });
-            toast(`Réservation : ${STATUTS_RESA[s.value]}`, "ok");
+            toast(`Réservation : ${STATUTS_RESA[s.value]}${s.value === "CONFIRMEE" ? " — contrat créé" : ""}`, "ok");
         } catch (err) { toast(err.message, "ko"); }
         renderAdmin();
     }));
@@ -792,134 +929,256 @@ function renderAdminResas(body, resas) {
         prolongForm(resas.find(r => r.idReservation === Number(b.dataset.prolong)), renderAdmin)));
 }
 
-function renderAdminVehicules(body, vehicules) {
+async function adminContrats(body) {
+    const contrats = await api.get("/api/contrats");
+    body.innerHTML = `
+        <div class="admin-head"><strong>${plural(contrats.length, "contrat")}</strong></div>
+        <div class="table-wrap"><table>
+            <thead><tr><th>Contrat</th><th>Client</th><th>Véhicule</th><th>Montant</th><th>Payé</th><th>Reste</th><th>État</th><th></th></tr></thead>
+            <tbody>${contrats.length ? contrats.map(({ contrat: c, totalPaye, resteAPayer }) => `<tr>
+                <td>#${c.idContrat}<br><span class="muted small">résa #${c.reservation.idReservation} · ${fmtDate(c.dateSignature)}</span></td>
+                <td>${esc(c.reservation.client.prenom)} ${esc(c.reservation.client.nom)}</td>
+                <td>${esc(c.reservation.vehicule.marque)} ${esc(c.reservation.vehicule.modele)}</td>
+                <td><strong>${euro(c.montantTotal)}</strong></td>
+                <td>${euro(totalPaye)}</td>
+                <td>${Number(resteAPayer) > 0 ? euro(resteAPayer) : `<span class="badge badge-CONFIRMEE">Soldé</span>`}</td>
+                <td>${c.valide ? `<span class="badge badge-CONFIRMEE">Valide</span>` : `<span class="badge badge-ANNULEE">Invalide</span>`}</td>
+                <td><div class="actions">
+                    <button class="btn btn-light btn-sm" data-pay="${c.idContrat}" data-reste="${resteAPayer}" data-valide="${c.valide}">Paiements</button>
+                    ${c.valide ? `<button class="btn btn-danger btn-sm" data-inval="${c.idContrat}">Invalider</button>` : ""}
+                </div></td>
+            </tr>`).join("") : emptyRow(8, "Aucun contrat : confirmez une réservation pour en créer un")}</tbody>
+        </table></div>`;
+    body.querySelectorAll("[data-pay]").forEach(b => b.addEventListener("click", () =>
+        showPaiements(Number(b.dataset.pay), b.dataset.valide === "true" && Number(b.dataset.reste) > 0, renderAdmin, Number(b.dataset.reste))));
+    body.querySelectorAll("[data-inval]").forEach(b => b.addEventListener("click", async () => {
+        if (!confirm(`Invalider le contrat #${b.dataset.inval} ?`)) return;
+        try { await api.patch(`/api/contrats/${b.dataset.inval}/invalider`); toast("Contrat invalidé", "ok"); renderAdmin(); }
+        catch (err) { toast(err.message, "ko"); }
+    }));
+}
+
+async function adminVehicules(body) {
+    const [vehicules, agences] = await Promise.all([api.get("/api/vehicules"), api.get("/api/agences")]);
     body.innerHTML = `
         <div class="admin-head"><strong>${plural(vehicules.length, "véhicule")}</strong>
             <button class="btn btn-primary" id="add">+ Ajouter un véhicule</button></div>
         <div class="table-wrap"><table>
-            <thead><tr><th>Véhicule</th><th>Immatriculation</th><th>Catégorie</th><th>Tarif / jour</th><th>Statut</th><th></th></tr></thead>
+            <thead><tr><th>Véhicule</th><th>Immatriculation</th><th>Catégorie</th><th>Agence</th><th>Tarif / jour</th><th>Statut</th><th></th></tr></thead>
             <tbody>${vehicules.length ? vehicules.map(v => `<tr>
                 <td><strong>${esc(v.marque)} ${esc(v.modele)}</strong></td>
                 <td><span class="chip plate">${esc(v.immatriculation)}</span></td>
                 <td>${esc(CATEGORIES[v.categorie])}</td>
+                <td>${v.agence ? esc(v.agence.ville) : "—"}</td>
                 <td>${euro(v.tarifJournalier)}</td>
                 <td><select class="input" data-statut="${v.idVehicule}">${options(STATUTS, v.statut)}</select></td>
                 <td><div class="actions">
                     <button class="btn btn-light btn-sm" data-edit="${v.idVehicule}">Modifier</button>
                     <button class="btn btn-danger btn-sm" data-del="${v.idVehicule}">Supprimer</button>
-                </div></td></tr>`).join("")
-                : `<tr><td colspan="6" class="muted" style="text-align:center">Aucun véhicule</td></tr>`}</tbody>
+                </div></td></tr>`).join("") : emptyRow(7, "Aucun véhicule")}</tbody>
         </table></div>`;
 
-    body.querySelector("#add").addEventListener("click", () => vehiculeForm());
-    body.querySelectorAll("[data-edit]").forEach(b => b.addEventListener("click", () =>
-        vehiculeForm(vehicules.find(v => v.idVehicule === Number(b.dataset.edit)))));
+    const agenceMap = Object.fromEntries(agences.map(a => [String(a.idAgence), `${a.nom} (${a.ville})`]));
+    const form = (v = null) => {
+        openModal(`<h2>${v ? "Modifier le véhicule" : "Ajouter un véhicule"}</h2>
+            <form id="vform" novalidate><div class="form-grid">
+                ${field("marque", "Marque", "text", v?.marque, "required")}
+                ${field("modele", "Modèle", "text", v?.modele, "required")}
+                ${field("immatriculation", "Immatriculation", "text", v?.immatriculation, `placeholder="AB-123-CD" required`)}
+                ${field("tarifJournalier", "Tarif journalier (€)", "number", v?.tarifJournalier, `step="0.01" min="0.01" required`)}
+                ${selectField("categorie", "Catégorie", CATEGORIES, v?.categorie || "CITADINE")}
+                ${selectField("statut", "Statut", STATUTS, v?.statut || "DISPONIBLE")}
+                <div class="field full"><label for="fld-idAgence">Agence</label>
+                    <select class="input" id="fld-idAgence" name="idAgence">${options(agenceMap, v?.agence ? String(v.agence.idAgence) : "", "Aucune agence")}</select></div>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-light" data-close>Annuler</button>
+                <button type="submit" class="btn btn-primary">${v ? "Enregistrer" : "Ajouter"}</button>
+            </div></form>`);
+        const f = document.getElementById("vform");
+        f.addEventListener("submit", async e => {
+            e.preventDefault();
+            const d = formData(f);
+            d.tarifJournalier = d.tarifJournalier === "" ? null : Number(d.tarifJournalier);
+            d.idAgence = d.idAgence ? Number(d.idAgence) : null;
+            try {
+                if (v) await api.put(`/api/vehicules/${v.idVehicule}`, d); else await api.post("/api/vehicules", d);
+                closeModal(); toast(v ? "Véhicule modifié" : "Véhicule ajouté", "ok"); renderAdmin();
+            } catch (err) { showFormErrors(f, err); }
+        });
+    };
+    body.querySelector("#add").addEventListener("click", () => form());
+    body.querySelectorAll("[data-edit]").forEach(b => b.addEventListener("click", () => form(vehicules.find(v => v.idVehicule === Number(b.dataset.edit)))));
     body.querySelectorAll("[data-statut]").forEach(s => s.addEventListener("change", async () => {
-        try {
-            await api.patch(`/api/vehicules/${s.dataset.statut}/statut`, { statut: s.value });
-            toast(`Statut changé : ${STATUTS[s.value]}`, "ok");
-        } catch (err) { toast(err.message, "ko"); renderAdmin(); }
+        try { await api.patch(`/api/vehicules/${s.dataset.statut}/statut`, { statut: s.value }); toast(`Statut changé : ${STATUTS[s.value]}`, "ok"); }
+        catch (err) { toast(err.message, "ko"); renderAdmin(); }
     }));
     body.querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", async () => {
         const v = vehicules.find(x => x.idVehicule === Number(b.dataset.del));
-        if (!confirm(`Supprimer définitivement ${v.marque} ${v.modele} (${v.immatriculation}) ?`)) return;
+        if (!confirm(`Supprimer définitivement ${v.marque} ${v.modele} (${v.immatriculation}) et son historique de maintenance ?`)) return;
         try { await api.del(`/api/vehicules/${v.idVehicule}`); toast("Véhicule supprimé", "ok"); renderAdmin(); }
         catch (err) { toast(err.message, "ko"); }
     }));
 }
 
-function vehiculeForm(v = null) {
-    openModal(`<h2>${v ? "Modifier le véhicule" : "Ajouter un véhicule"}</h2>
-        <form id="vform" novalidate><div class="form-grid">
-            ${field("marque", "Marque", "text", v?.marque, "required")}
-            ${field("modele", "Modèle", "text", v?.modele, "required")}
-            ${field("immatriculation", "Immatriculation", "text", v?.immatriculation, `placeholder="AB-123-CD" required`)}
-            ${field("tarifJournalier", "Tarif journalier (€)", "number", v?.tarifJournalier, `step="0.01" min="0.01" required`)}
-            ${selectField("categorie", "Catégorie", CATEGORIES, v?.categorie || "CITADINE")}
-            ${selectField("statut", "Statut", STATUTS, v?.statut || "DISPONIBLE")}
-        </div>
-        <div class="form-actions">
-            <button type="button" class="btn btn-light" data-close>Annuler</button>
-            <button type="submit" class="btn btn-primary">${v ? "Enregistrer" : "Ajouter"}</button>
-        </div></form>`);
-    const form = document.getElementById("vform");
-    form.addEventListener("submit", async e => {
-        e.preventDefault();
-        const d = formData(form);
-        d.tarifJournalier = d.tarifJournalier === "" ? null : Number(d.tarifJournalier);
-        try {
-            if (v) await api.put(`/api/vehicules/${v.idVehicule}`, d);
-            else await api.post("/api/vehicules", d);
-            closeModal();
-            toast(v ? "Véhicule modifié" : "Véhicule ajouté", "ok");
-            renderAdmin();
-        } catch (err) { showFormErrors(form, err); }
-    });
-}
-
-function renderAdminAgences(body, agences) {
+async function adminMaintenances(body) {
+    const [maintenances, vehicules] = await Promise.all([api.get("/api/maintenances"), api.get("/api/vehicules")]);
     body.innerHTML = `
-        <div class="admin-head"><strong>${plural(agences.length, "agence")}</strong>
-            <button class="btn btn-primary" id="add">+ Ajouter une agence</button></div>
+        <div class="admin-head"><strong>${plural(maintenances.length, "maintenance")}</strong>
+            <button class="btn btn-primary" id="add">+ Mettre un véhicule en maintenance</button></div>
         <div class="table-wrap"><table>
-            <thead><tr><th>Nom</th><th>Ville</th><th>Adresse</th><th>Téléphone</th><th></th></tr></thead>
-            <tbody>${agences.length ? agences.map(a => `<tr>
-                <td><strong>${esc(a.nom)}</strong></td><td>${esc(a.ville)}</td><td>${esc(a.adresse)}</td><td>${esc(a.telephone || "—")}</td>
-                <td><div class="actions">
-                    <button class="btn btn-light btn-sm" data-edit="${a.idAgence}">Modifier</button>
-                    <button class="btn btn-danger btn-sm" data-del="${a.idAgence}">Supprimer</button>
-                </div></td></tr>`).join("")
-                : `<tr><td colspan="5" class="muted" style="text-align:center">Aucune agence</td></tr>`}</tbody>
+            <thead><tr><th>Véhicule</th><th>Début</th><th>Fin</th><th>Description</th><th>État</th><th></th></tr></thead>
+            <tbody>${maintenances.length ? maintenances.map(m => `<tr>
+                <td><strong>${esc(m.vehicule.marque)} ${esc(m.vehicule.modele)}</strong><br><span class="muted small">${esc(m.vehicule.immatriculation)}</span></td>
+                <td>${fmtDate(m.dateDebut)}</td><td>${fmtDate(m.dateFin)}</td>
+                <td style="white-space:normal;min-width:200px">${esc(m.description || "—")}</td>
+                <td>${m.dateFin ? `<span class="badge badge-TERMINEE">Terminée</span>` : `<span class="badge badge-MAINTENANCE">En cours</span>`}</td>
+                <td><div class="actions">${m.dateFin
+                    ? `<button class="btn btn-danger btn-sm" data-del="${m.idMaintenance}">Supprimer</button>`
+                    : `<button class="btn btn-primary btn-sm" data-end="${m.idMaintenance}">Terminer</button>`}</div></td>
+            </tr>`).join("") : emptyRow(6, "Aucune maintenance")}</tbody>
         </table></div>`;
-
-    body.querySelector("#add").addEventListener("click", () => agenceForm());
-    body.querySelectorAll("[data-edit]").forEach(b => b.addEventListener("click", () =>
-        agenceForm(agences.find(a => a.idAgence === Number(b.dataset.edit)))));
+    body.querySelector("#add").addEventListener("click", () => {
+        const map = Object.fromEntries(vehicules.filter(v => v.statut !== "MAINTENANCE").map(v => [String(v.idVehicule), `${v.marque} ${v.modele} (${v.immatriculation})`]));
+        openModal(`<h2>Mettre un véhicule en maintenance</h2>
+            <form id="mform" novalidate><div class="form-grid">
+                <div class="field full"><label for="fld-idVehicule">Véhicule</label>
+                    <select class="input" id="fld-idVehicule" name="idVehicule">${options(map, "", "Choisir un véhicule")}</select>
+                    <span class="field-error" data-error-for="idVehicule"></span></div>
+                ${field("dateDebut", "Début", "date", today())}
+                <div class="field full"><label for="fld-description">Description</label>
+                    <textarea class="input" id="fld-description" name="description" rows="3" maxlength="500" placeholder="Révision, pneus, carrosserie…"></textarea></div>
+            </div>
+            <div class="form-actions"><button type="button" class="btn btn-light" data-close>Annuler</button>
+                <button type="submit" class="btn btn-primary">Enregistrer</button></div></form>`);
+        const f = document.getElementById("mform");
+        f.addEventListener("submit", async e => {
+            e.preventDefault();
+            const d = formData(f);
+            try {
+                await api.post("/api/maintenances", { idVehicule: d.idVehicule ? Number(d.idVehicule) : null, dateDebut: d.dateDebut || null, description: d.description });
+                closeModal(); toast("Véhicule passé en maintenance", "ok"); renderAdmin();
+            } catch (err) { showFormErrors(f, err); }
+        });
+    });
+    body.querySelectorAll("[data-end]").forEach(b => b.addEventListener("click", async () => {
+        try { await api.patch(`/api/maintenances/${b.dataset.end}/terminer`, { dateFin: today() }); toast("Maintenance terminée : véhicule disponible", "ok"); renderAdmin(); }
+        catch (err) { toast(err.message, "ko"); }
+    }));
     body.querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", async () => {
-        const a = agences.find(x => x.idAgence === Number(b.dataset.del));
-        if (!confirm(`Supprimer définitivement l'agence « ${a.nom} » ?`)) return;
-        try { await api.del(`/api/agences/${a.idAgence}`); toast("Agence supprimée", "ok"); renderAdmin(); }
+        if (!confirm("Supprimer cette maintenance de l'historique ?")) return;
+        try { await api.del(`/api/maintenances/${b.dataset.del}`); toast("Maintenance supprimée", "ok"); renderAdmin(); }
         catch (err) { toast(err.message, "ko"); }
     }));
 }
 
-function agenceForm(a = null) {
-    openModal(`<h2>${a ? "Modifier l'agence" : "Ajouter une agence"}</h2>
-        <form id="aform" novalidate><div class="form-grid">
-            ${field("nom", "Nom", "text", a?.nom, "required", "full")}
-            ${field("ville", "Ville", "text", a?.ville, "required")}
-            ${field("telephone", "Téléphone", "tel", a?.telephone)}
-            ${field("adresse", "Adresse", "text", a?.adresse, "required", "full")}
-        </div>
-        <div class="form-actions">
-            <button type="button" class="btn btn-light" data-close>Annuler</button>
-            <button type="submit" class="btn btn-primary">${a ? "Enregistrer" : "Ajouter"}</button>
-        </div></form>`);
-    const form = document.getElementById("aform");
-    form.addEventListener("submit", async e => {
-        e.preventDefault();
-        try {
-            if (a) await api.put(`/api/agences/${a.idAgence}`, formData(form));
-            else await api.post("/api/agences", formData(form));
-            closeModal();
-            toast(a ? "Agence modifiée" : "Agence ajoutée", "ok");
-            renderAdmin();
-        } catch (err) { showFormErrors(form, err); }
+/** Generic table + modal form for simple entities (agencies, equipment, employees). */
+function crudTable(body, { title, items, idKey, columns, fields, url, label, toPayload = d => d, deleteLabel }) {
+    body.innerHTML = `
+        <div class="admin-head"><strong>${plural(items.length, title)}</strong>
+            <button class="btn btn-primary" id="add">+ Ajouter</button></div>
+        <div class="table-wrap"><table>
+            <thead><tr>${columns.map(c => `<th>${c[0]}</th>`).join("")}<th></th></tr></thead>
+            <tbody>${items.length ? items.map(it => `<tr>${columns.map(c => `<td>${c[1](it)}</td>`).join("")}
+                <td><div class="actions">
+                    <button class="btn btn-light btn-sm" data-edit="${it[idKey]}">Modifier</button>
+                    <button class="btn btn-danger btn-sm" data-del="${it[idKey]}">Supprimer</button>
+                </div></td></tr>`).join("") : emptyRow(columns.length + 1, `Aucun(e) ${title}`)}</tbody>
+        </table></div>`;
+    const form = (it = null) => {
+        openModal(`<h2>${it ? "Modifier" : "Ajouter"} : ${esc(label)}</h2>
+            <form id="cform" novalidate><div class="form-grid">${fields(it)}</div>
+            <div class="form-actions"><button type="button" class="btn btn-light" data-close>Annuler</button>
+                <button type="submit" class="btn btn-primary">${it ? "Enregistrer" : "Ajouter"}</button></div></form>`);
+        const f = document.getElementById("cform");
+        bindPasswordToggles(f);
+        f.addEventListener("submit", async e => {
+            e.preventDefault();
+            try {
+                const d = toPayload(formData(f));
+                if (it) await api.put(`${url}/${it[idKey]}`, d); else await api.post(url, d);
+                closeModal(); toast(it ? "Modifié" : "Ajouté", "ok"); renderAdmin();
+            } catch (err) { showFormErrors(f, err); }
+        });
+    };
+    body.querySelector("#add").addEventListener("click", () => form());
+    body.querySelectorAll("[data-edit]").forEach(b => b.addEventListener("click", () => form(items.find(i => String(i[idKey]) === b.dataset.edit))));
+    body.querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", async () => {
+        const it = items.find(i => String(i[idKey]) === b.dataset.del);
+        if (!confirm(`Supprimer définitivement ${deleteLabel(it)} ?`)) return;
+        try { await api.del(`${url}/${it[idKey]}`); toast("Supprimé", "ok"); renderAdmin(); }
+        catch (err) { toast(err.message, "ko"); }
+    }));
+}
+
+async function adminAgences(body) {
+    crudTable(body, {
+        title: "agence", label: "agence", items: await api.get("/api/agences"), idKey: "idAgence", url: "/api/agences",
+        columns: [["Nom", a => `<strong>${esc(a.nom)}</strong>`], ["Ville", a => esc(a.ville)], ["Adresse", a => esc(a.adresse)], ["Téléphone", a => esc(a.telephone || "—")]],
+        fields: a => `${field("nom", "Nom", "text", a?.nom, "required", "full")}${field("ville", "Ville", "text", a?.ville, "required")}
+            ${field("telephone", "Téléphone", "tel", a?.telephone)}${field("adresse", "Adresse", "text", a?.adresse, "required", "full")}`,
+        deleteLabel: a => `l'agence « ${a.nom} »`
     });
 }
 
-function renderAdminClients(body, clients) {
+async function adminEquipements(body) {
+    crudTable(body, {
+        title: "équipement", label: "équipement", items: await api.get("/api/equipements"), idKey: "idEquipement", url: "/api/equipements",
+        columns: [["Libellé", e => `<strong>${esc(e.libelle)}</strong>`], ["Tarif / jour", e => euro(e.tarifJournalier)]],
+        fields: e => `${field("libelle", "Libellé", "text", e?.libelle, "required", "full")}
+            ${field("tarifJournalier", "Tarif journalier (€)", "number", e?.tarifJournalier, `step="0.01" min="0" required`)}`,
+        toPayload: d => ({ libelle: d.libelle, tarifJournalier: d.tarifJournalier === "" ? null : Number(d.tarifJournalier) }),
+        deleteLabel: e => `l'équipement « ${e.libelle} »`
+    });
+}
+
+async function adminEmployes(body) {
+    const [employes, agences] = await Promise.all([api.get("/api/employes"), api.get("/api/agences")]);
+    const agenceMap = Object.fromEntries(agences.map(a => [String(a.idAgence), `${a.nom} (${a.ville})`]));
+    crudTable(body, {
+        title: "employé", label: "employé", items: employes, idKey: "idEmploye", url: "/api/employes",
+        columns: [["Employé", e => `<strong>${esc(e.prenom)} ${esc(e.nom)}</strong>`], ["Email", e => esc(e.email)],
+            ["Rôle", e => esc(ROLES[e.role])], ["Agence", e => e.agence ? esc(e.agence.ville) : "—"]],
+        fields: e => `${field("prenom", "Prénom", "text", e?.prenom, "required")}${field("nom", "Nom", "text", e?.nom, "required")}
+            ${field("email", "Email (identifiant)", "email", e?.email, "required", "full")}
+            ${selectField("role", "Rôle", ROLES, e?.role || "AGENT")}
+            <div class="field"><label for="fld-idAgence">Agence</label>
+                <select class="input" id="fld-idAgence" name="idAgence">${options(agenceMap, e?.agence ? String(e.agence.idAgence) : "", "Aucune agence")}</select></div>
+            <div class="full">${passwordField("motDePasse", e ? "Nouveau mot de passe (laisser vide pour ne pas changer)" : "Mot de passe", `autocomplete="new-password"`)}</div>`,
+        toPayload: d => ({ ...d, idAgence: d.idAgence ? Number(d.idAgence) : null }),
+        deleteLabel: e => `l'employé ${e.prenom} ${e.nom}`
+    });
+}
+
+async function adminClients(body) {
+    const p = await api.get(`/api/clients?page=${pages.clients}&size=15`);
+    const clients = p.content;
     body.innerHTML = `
-        <div class="admin-head"><strong>${plural(clients.length, "client")}</strong></div>
+        <div class="admin-head"><strong>${plural(p.totalElements, "client")}</strong></div>
         <div class="table-wrap"><table>
             <thead><tr><th>Client</th><th>Email</th><th>Téléphone</th><th>N° permis</th><th>Inscrit le</th><th></th></tr></thead>
             <tbody>${clients.length ? clients.map(c => `<tr>
                 <td><strong>${esc(c.prenom)} ${esc(c.nom)}</strong></td><td>${esc(c.email)}</td>
                 <td>${esc(c.telephone || "—")}</td><td>${esc(c.numPermis)}</td>
                 <td>${fmtDate(c.dateInscription)}</td>
-                <td><div class="actions"><button class="btn btn-danger btn-sm" data-del="${c.idClient}">Supprimer</button></div></td></tr>`).join("")
-                : `<tr><td colspan="6" class="muted" style="text-align:center">Aucun client inscrit</td></tr>`}</tbody>
-        </table></div>`;
+                <td><div class="actions">
+                    <button class="btn btn-light btn-sm" data-reset="${c.idClient}">Réinitialiser le mot de passe</button>
+                    <button class="btn btn-danger btn-sm" data-del="${c.idClient}">Supprimer</button>
+                </div></td></tr>`).join("") : emptyRow(6, "Aucun client inscrit")}</tbody>
+        </table></div>${pager("clients", p)}`;
+    bindPager(body, "clients");
+    body.querySelectorAll("[data-reset]").forEach(b => b.addEventListener("click", async () => {
+        const c = clients.find(x => x.idClient === Number(b.dataset.reset));
+        if (!confirm(`Générer un mot de passe temporaire pour ${c.prenom} ${c.nom} ? L'ancien ne fonctionnera plus.`)) return;
+        try {
+            const r = await api.post(`/api/clients/${c.idClient}/reinitialiser-mot-de-passe`);
+            openModal(`<h2>Mot de passe temporaire</h2>
+                <p>Communiquez ce mot de passe à <strong>${esc(c.prenom)} ${esc(c.nom)}</strong> (il ne sera plus affiché) :</p>
+                <p class="estimate" style="font-family:ui-monospace,Consolas,monospace;font-size:1.4rem;text-align:center;user-select:all">${esc(r.motDePasseTemporaire)}</p>
+                <p class="muted small">Le client pourra le changer dans « Mon espace → Mon compte ».</p>
+                <div class="form-actions"><button class="btn btn-primary" data-close>J'ai noté le mot de passe</button></div>`);
+        } catch (err) { toast(err.message, "ko"); }
+    }));
     body.querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", async () => {
         const c = clients.find(x => x.idClient === Number(b.dataset.del));
         if (!confirm(`Supprimer définitivement le client ${c.prenom} ${c.nom} ?`)) return;
