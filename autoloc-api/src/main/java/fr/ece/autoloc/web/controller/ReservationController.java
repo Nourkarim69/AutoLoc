@@ -2,11 +2,14 @@ package fr.ece.autoloc.web.controller;
 
 import fr.ece.autoloc.domain.Reservation;
 import fr.ece.autoloc.domain.StatutReservation;
-import fr.ece.autoloc.web.dto.ReservationRequest;
 import fr.ece.autoloc.repository.ReservationRepository;
 import fr.ece.autoloc.security.SessionUser;
 import fr.ece.autoloc.service.ReservationService;
+import fr.ece.autoloc.web.dto.PageResponse;
+import fr.ece.autoloc.web.dto.ReservationRequest;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -30,10 +33,13 @@ public class ReservationController {
         this.reservationRepository = reservationRepository;
     }
 
-    /** Admin: every reservation. */
+    /** Admin: all reservations, one page at a time (most recent pick-up first). */
     @GetMapping
-    public List<Reservation> findAll() {
-        return reservationRepository.findAllByOrderByDateDebutDesc();
+    public PageResponse<Reservation> findAll(@RequestParam(defaultValue = "0") int page,
+                                             @RequestParam(defaultValue = "20") int size) {
+        PageRequest pageable = PageRequest.of(Math.max(page, 0), Math.max(1, Math.min(size, 100)),
+                Sort.by(Sort.Direction.DESC, "dateDebut").and(Sort.by(Sort.Direction.DESC, "idReservation")));
+        return PageResponse.of(reservationRepository.findAll(pageable));
     }
 
     /** Client: my reservations. */
@@ -56,7 +62,8 @@ public class ReservationController {
     public Reservation create(@Valid @RequestBody ReservationRequest request,
                               @SessionAttribute(SessionUser.SESSION_KEY) SessionUser user) {
         requireClient(user);
-        return reservationService.reserver(user.id(), request.idVehicule(), request.dateDebut(), request.dateFin());
+        return reservationService.reserver(user.id(), request.idVehicule(), request.dateDebut(), request.dateFin(),
+                request.idEquipements());
     }
 
     @PatchMapping("/{id}/prolonger")
@@ -74,7 +81,7 @@ public class ReservationController {
         return reservationService.annuler(id, user);
     }
 
-    /** Admin: confirm, finish or cancel. */
+    /** Admin: confirm (signs the contract), finish or cancel. */
     @PatchMapping("/{id}/statut")
     public Reservation changerStatut(@PathVariable Long id, @RequestBody Map<String, StatutReservation> body) {
         StatutReservation statut = body.get("statut");

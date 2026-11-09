@@ -35,6 +35,9 @@ public record VehiculeRequest(
         BigDecimal tarifJournalier,
 
         @NotNull(message = "Le statut est obligatoire")
-        StatutVehicule statut
+        StatutVehicule statut,
+
+        /** Pick-up agency (optional). */
+        Long idAgence
 ) {
 }

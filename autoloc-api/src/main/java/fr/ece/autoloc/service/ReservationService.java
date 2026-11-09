@@ -1,11 +1,13 @@
 package fr.ece.autoloc.service;
 
 import fr.ece.autoloc.domain.Client;
+import fr.ece.autoloc.domain.Equipement;
 import fr.ece.autoloc.domain.Reservation;
 import fr.ece.autoloc.domain.StatutReservation;
 import fr.ece.autoloc.domain.StatutVehicule;
 import fr.ece.autoloc.domain.Vehicule;
 import fr.ece.autoloc.repository.ClientRepository;
+import fr.ece.autoloc.repository.EquipementRepository;
 import fr.ece.autoloc.repository.ReservationRepository;
 import fr.ece.autoloc.repository.VehiculeRepository;
 import fr.ece.autoloc.security.SessionUser;
@@ -15,9 +17,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -30,28 +35,38 @@ public class ReservationService {
     /** Reservations that block the car. */
     public static final Set<StatutReservation> ACTIVES = EnumSet.of(StatutReservation.EN_ATTENTE, StatutReservation.CONFIRMEE);
 
-    private static final int MAX_JOURS = 90;
+    static final int MAX_JOURS = 90;
 
     private final ReservationRepository reservationRepository;
     private final VehiculeRepository vehiculeRepository;
     private final ClientRepository clientRepository;
+    private final EquipementRepository equipementRepository;
+    private final ContratService contratService;
+    private final Clock clock;
 
     public ReservationService(ReservationRepository reservationRepository,
                               VehiculeRepository vehiculeRepository,
-                              ClientRepository clientRepository) {
+                              ClientRepository clientRepository,
+                              EquipementRepository equipementRepository,
+                              ContratService contratService,
+                              Clock clock) {
         this.reservationRepository = reservationRepository;
         this.vehiculeRepository = vehiculeRepository;
         this.clientRepository = clientRepository;
+        this.equipementRepository = equipementRepository;
+        this.contratService = contratService;
+        this.clock = clock;
     }
 
     @Transactional
-    public Reservation reserver(Long idClient, Long idVehicule, LocalDate debut, LocalDate fin) {
+    public Reservation reserver(Long idClient, Long idVehicule, LocalDate debut, LocalDate fin,
+                               Collection<Long> idEquipements) {
         Client client = clientRepository.findById(idClient)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Compte introuvable, reconnectez-vous"));
         Vehicule vehicule = vehiculeRepository.findById(idVehicule)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Véhicule introuvable"));
 
-        if (debut.isBefore(LocalDate.now())) {
+        if (debut.isBefore(LocalDate.now(clock))) {
             throw bad("La date de prise ne peut pas être dans le passé");
         }
         verifierDuree(debut, fin);
@@ -62,6 +77,8 @@ public class ReservationService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Ce véhicule est déjà réservé sur ces dates");
         }
 
+        Set<Equipement> equipements = chargerEquipements(idEquipements);
+
         Reservation r = new Reservation();
         r.setClient(client);
         r.setVehicule(vehicule);
@@ -69,7 +86,8 @@ public class ReservationService {
         r.setDateFin(fin);
         r.setStatut(StatutReservation.EN_ATTENTE);
         r.setNbProlongations(0);
-        r.setMontantTotal(prix(vehicule, debut, fin));
+        r.setEquipements(equipements);
+        r.setMontantTotal(prix(vehicule, equipements, debut, fin));
         return reservationRepository.save(r);
     }
 
@@ -91,7 +109,8 @@ public class ReservationService {
         }
         r.setDateFin(nouvelleDateFin);
         r.setNbProlongations(r.getNbProlongations() + 1);
-        r.setMontantTotal(prix(r.getVehicule(), r.getDateDebut(), nouvelleDateFin));
+        r.setMontantTotal(prix(r.getVehicule(), r.getEquipements(), r.getDateDebut(), nouvelleDateFin));
+        contratService.synchroniserMontant(r);
         return reservationRepository.save(r);
     }
 
@@ -101,14 +120,16 @@ public class ReservationService {
         if (!ACTIVES.contains(r.getStatut())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Cette réservation ne peut plus être annulée");
         }
-        if (!user.isAdmin() && !r.getDateDebut().isAfter(LocalDate.now())) {
+        if (!user.isAdmin() && !r.getDateDebut().isAfter(LocalDate.now(clock))) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "La location a déjà commencé : contactez votre agence pour l'annuler");
         }
         r.setStatut(StatutReservation.ANNULEE);
+        contratService.invaliderSiExiste(r);
         return reservationRepository.save(r);
     }
 
+    /** Admin: confirming signs the contract, cancelling invalidates it. */
     @Transactional
     public Reservation changerStatut(Long idReservation, StatutReservation statut) {
         Reservation r = reservationRepository.findById(idReservation)
@@ -119,17 +140,39 @@ public class ReservationService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Le véhicule a été réservé entre-temps sur ces dates");
         }
         r.setStatut(statut);
+        if (statut == StatutReservation.CONFIRMEE) {
+            contratService.creerSiAbsent(r);
+        } else if (statut == StatutReservation.ANNULEE) {
+            contratService.invaliderSiExiste(r);
+        }
         return reservationRepository.save(r);
     }
 
     public List<Reservation> indisponibilites(Long idVehicule) {
         return reservationRepository.findByVehiculeIdVehiculeAndStatutInAndDateFinAfterOrderByDateDebut(
-                idVehicule, ACTIVES, LocalDate.now().minusDays(1));
+                idVehicule, ACTIVES, LocalDate.now(clock).minusDays(1));
     }
 
-    public static BigDecimal prix(Vehicule v, LocalDate debut, LocalDate fin) {
+    /** Price = number of days x (car daily rate + daily rate of each option). */
+    public static BigDecimal prix(Vehicule v, Collection<Equipement> equipements, LocalDate debut, LocalDate fin) {
         long jours = ChronoUnit.DAYS.between(debut, fin);
-        return v.getTarifJournalier().multiply(BigDecimal.valueOf(jours));
+        BigDecimal parJour = v.getTarifJournalier();
+        for (Equipement e : equipements) {
+            parJour = parJour.add(e.getTarifJournalier());
+        }
+        return parJour.multiply(BigDecimal.valueOf(jours));
+    }
+
+    private Set<Equipement> chargerEquipements(Collection<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return new HashSet<>();
+        }
+        Set<Long> uniques = new HashSet<>(ids);
+        List<Equipement> found = equipementRepository.findAllById(uniques);
+        if (found.size() != uniques.size()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Équipement introuvable");
+        }
+        return new HashSet<>(found);
     }
 
     private Reservation getAutorisee(Long idReservation, SessionUser user) {

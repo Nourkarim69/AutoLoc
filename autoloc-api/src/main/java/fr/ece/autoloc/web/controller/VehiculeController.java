@@ -3,6 +3,7 @@ package fr.ece.autoloc.web.controller;
 import fr.ece.autoloc.domain.StatutVehicule;
 import fr.ece.autoloc.domain.Vehicule;
 import fr.ece.autoloc.web.dto.VehiculeRequest;
+import fr.ece.autoloc.repository.AgenceRepository;
 import fr.ece.autoloc.repository.VehiculeRepository;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -13,16 +14,18 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * REST API for vehicles (full CRUD + status change).
+ * REST API for vehicles (full CRUD + status change). Reading is public, writing is for admins.
  */
 @RestController
 @RequestMapping("/api/vehicules")
 public class VehiculeController {
 
     private final VehiculeRepository vehiculeRepository;
+    private final AgenceRepository agenceRepository;
 
-    public VehiculeController(VehiculeRepository vehiculeRepository) {
+    public VehiculeController(VehiculeRepository vehiculeRepository, AgenceRepository agenceRepository) {
         this.vehiculeRepository = vehiculeRepository;
+        this.agenceRepository = agenceRepository;
     }
 
     @GetMapping
@@ -72,12 +75,14 @@ public class VehiculeController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Véhicule introuvable"));
     }
 
-    private static void apply(Vehicule vehicule, VehiculeRequest request) {
+    private void apply(Vehicule vehicule, VehiculeRequest request) {
         vehicule.setImmatriculation(request.immatriculation().trim().toUpperCase());
         vehicule.setMarque(request.marque().trim());
         vehicule.setModele(request.modele().trim());
         vehicule.setCategorie(request.categorie());
         vehicule.setTarifJournalier(request.tarifJournalier());
         vehicule.setStatut(request.statut());
+        vehicule.setAgence(request.idAgence() == null ? null : agenceRepository.findById(request.idAgence())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Agence introuvable")));
     }
 }

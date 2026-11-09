@@ -1,11 +1,13 @@
 package fr.ece.autoloc.web.dto;
 
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
+import java.util.List;
 
 /**
- * Booking form: the car chosen in the drop-down list, the pick-up day and the return day.
+ * Booking form: the car chosen in the drop-down list, the pick-up day, the return day and the options.
  */
 public record ReservationRequest(
         @NotNull(message = "Choisissez un véhicule")
@@ -15,6 +17,10 @@ public record ReservationRequest(
         LocalDate dateDebut,
 
         @NotNull(message = "La date de retour est obligatoire")
-        LocalDate dateFin
+        LocalDate dateFin,
+
+        /** Options ticked in the form (GPS, child seat...), may be empty. */
+        @Size(max = 10, message = "10 options maximum")
+        List<Long> idEquipements
 ) {
 }

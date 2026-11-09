@@ -10,11 +10,12 @@ import java.io.IOException;
 /**
  * Access rules for the REST API:
  * <ul>
- *     <li>public: /api/auth/**, and reading vehicles, agencies and booked dates</li>
- *     <li>logged-in user (client or admin): /api/reservations/**</li>
- *     <li>admin only: everything else (managing vehicles, agencies, clients, all reservations)</li>
+ *     <li>public: /api/auth/**, and reading vehicles, agencies, equipment and booked dates</li>
+ *     <li>logged-in user (client or admin): /api/reservations/**, /api/contrats/mine,
+ *         GET /api/contrats/{id}/paiements</li>
+ *     <li>admin only: everything else</li>
  * </ul>
- * Fine-grained checks (a client can only touch their own reservations) are done in the controllers.
+ * Fine-grained checks (a client can only see their own data) are done in the controllers and services.
  */
 public class AuthInterceptor implements HandlerInterceptor {
 
@@ -32,32 +33,35 @@ public class AuthInterceptor implements HandlerInterceptor {
         if (user == null) {
             return deny(response, HttpServletResponse.SC_UNAUTHORIZED, "Vous devez être connecté");
         }
-        if (user.isAdmin()) {
-            return true;
-        }
-        if (path.startsWith("/api/reservations") && !isAdminOnlyReservationRoute(path, method)) {
+        if (user.isAdmin() || isForAnyLoggedUser(path, method)) {
             return true;
         }
         return deny(response, HttpServletResponse.SC_FORBIDDEN, "Accès réservé à l'administration");
     }
 
-    private static boolean isPublic(String path, String method) {
+    static boolean isPublic(String path, String method) {
         if (path.startsWith("/api/auth/")) {
             return true;
         }
         boolean read = "GET".equals(method);
         return read && (path.startsWith("/api/vehicules")
                 || path.startsWith("/api/agences")
+                || path.startsWith("/api/equipements")
                 || path.equals("/api/reservations/indisponibilites"));
     }
 
-    /** GET /api/reservations (all of them) and PATCH /api/reservations/{id}/statut are for admins. */
-    private static boolean isAdminOnlyReservationRoute(String path, String method) {
-        return ("GET".equals(method) && path.equals("/api/reservations"))
-                || ("PATCH".equals(method) && path.matches("/api/reservations/\\d+/statut"));
+    static boolean isForAnyLoggedUser(String path, String method) {
+        if (path.startsWith("/api/reservations")) {
+            // listing every reservation and changing a status are admin actions
+            boolean adminOnly = ("GET".equals(method) && path.equals("/api/reservations"))
+                    || ("PATCH".equals(method) && path.matches("/api/reservations/\\d+/statut"));
+            return !adminOnly;
+        }
+        return "GET".equals(method)
+                && (path.equals("/api/contrats/mine") || path.matches("/api/contrats/\\d+/paiements"));
     }
 
-    static SessionUser currentUser(HttpServletRequest request) {
+    public static SessionUser currentUser(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
         return session == null ? null : (SessionUser) session.getAttribute(SessionUser.SESSION_KEY);
     }

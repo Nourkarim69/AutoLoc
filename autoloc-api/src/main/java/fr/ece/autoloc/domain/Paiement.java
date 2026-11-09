@@ -1,7 +1,6 @@
 package fr.ece.autoloc.domain;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -14,7 +13,6 @@ import java.time.LocalDate;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
 public class Paiement {
 
     @Id
@@ -30,4 +28,9 @@ public class Paiement {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private ModePaiement modePaiement;
+
+    /** Owning side (0..* payments -> 1 contract). EAGER, no cascade (the contract cascades to its payments). */
+    @ManyToOne(optional = false, fetch = FetchType.EAGER)
+    @JoinColumn(name = "id_contrat", nullable = false)
+    private Contrat contrat;
 }

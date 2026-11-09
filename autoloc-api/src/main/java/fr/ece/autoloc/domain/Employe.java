@@ -2,7 +2,6 @@ package fr.ece.autoloc.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -12,7 +11,6 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
 public class Employe {
 
     @Id
@@ -37,4 +35,18 @@ public class Employe {
     @JsonIgnore
     @Column(nullable = false, length = 100)
     private String motDePasse;
+
+    /** Agency the employee works in (0..* employees -> 0..1 agency). EAGER, no cascade. */
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "id_agence")
+    private Agence agence;
+
+    public Employe(String nom, String prenom, RoleEmploye role, String email, String motDePasse, Agence agence) {
+        this.nom = nom;
+        this.prenom = prenom;
+        this.role = role;
+        this.email = email;
+        this.motDePasse = motDePasse;
+        this.agence = agence;
+    }
 }
