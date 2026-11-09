@@ -1,5 +1,6 @@
 package fr.ece.autoloc.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -37,4 +38,9 @@ public class Client {
 
     @Column(nullable = false)
     private LocalDate dateInscription;
+
+    /** BCrypt hash of the password (never the plain password, never sent in JSON). */
+    @JsonIgnore
+    @Column(nullable = false, length = 100)
+    private String motDePasse;
 }
