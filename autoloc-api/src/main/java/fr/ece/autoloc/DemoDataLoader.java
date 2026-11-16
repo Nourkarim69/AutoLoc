@@ -97,6 +97,19 @@ public class DemoDataLoader implements CommandLineRunner {
             log.info("Demo data loaded: {} equipments", equipementRepository.count());
         }
 
+        // equipment fitted on the cars (many-to-many vehicule_equipement), only for cars that have none yet
+        List<Equipement> equipements = equipementRepository.findAll();
+        if (!equipements.isEmpty()) {
+            for (Vehicule v : vehiculeRepository.findAll()) {
+                if (v.getEquipements().isEmpty()) {
+                    v.getEquipements().add(equipements.get(0));                          // GPS on every car
+                    if (v.getCategorie() == CategorieVehicule.SUV && equipements.size() > 2) {
+                        v.getEquipements().add(equipements.get(2));                      // snow chains on SUVs
+                    }
+                }
+            }
+        }
+
         if (employeRepository.findByEmail(adminEmail).isEmpty()) {
             employeRepository.save(new Employe("AutoLoc", "Admin", RoleEmploye.MANAGER, adminEmail,
                     passwordEncoder.encode(adminPassword), agences.isEmpty() ? null : agences.get(0)));

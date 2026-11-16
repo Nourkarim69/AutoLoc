@@ -1,0 +1,86 @@
+{
+  "uid": "autoloc-monitoring",
+  "title": "AutoLoc — Application Monitoring",
+  "tags": ["autoloc", "spring-boot"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "time": { "from": "now-5m", "to": "now" },
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Application UP",
+      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "up{job=\"autoloc-api\"}" }],
+      "fieldConfig": { "defaults": {
+        "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }],
+        "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+      }, "overrides": [] },
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 2, "type": "stat", "title": "Uptime",
+      "gridPos": { "x": 4, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "process_uptime_seconds{job=\"autoloc-api\"}" }],
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "options": { "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 3, "type": "stat", "title": "Live threads",
+      "gridPos": { "x": 8, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "jvm_threads_live_threads{job=\"autoloc-api\"}" }],
+      "options": { "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 4, "type": "stat", "title": "DB connections in use (HikariCP)",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "sum(hikaricp_connections_active{job=\"autoloc-api\"})" }],
+      "options": { "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 5, "type": "stat", "title": "HTTP errors 5xx (last 5 min)",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "sum(increase(http_server_requests_seconds_count{job=\"autoloc-api\",status=~\"5..\"}[5m])) or vector(0)" }],
+      "fieldConfig": { "defaults": { "decimals": 0,
+        "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] }
+      }, "overrides": [] },
+      "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "HTTP request rate (requests / second)",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "legendFormat": "{{uri}}",
+        "expr": "sum by (uri) (rate(http_server_requests_seconds_count{job=\"autoloc-api\",uri!~\"/actuator.*\"}[1m]))" }],
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
+    },
+    {
+      "id": 7, "type": "timeseries", "title": "HTTP response time p95",
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "legendFormat": "p95",
+        "expr": "histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket{job=\"autoloc-api\",uri!~\"/actuator.*\"}[5m])))" }],
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] }
+    },
+    {
+      "id": 8, "type": "timeseries", "title": "JVM memory used",
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "legendFormat": "{{area}}",
+        "expr": "sum by (area) (jvm_memory_used_bytes{job=\"autoloc-api\"})" }],
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] }
+    },
+    {
+      "id": 9, "type": "timeseries", "title": "CPU usage of the Spring Boot process",
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "legendFormat": "process", "expr": "process_cpu_usage{job=\"autoloc-api\"}" }],
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0 }, "overrides": [] }
+    }
+  ]
+}

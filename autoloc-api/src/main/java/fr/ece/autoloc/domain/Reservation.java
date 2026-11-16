@@ -1,5 +1,7 @@
 package fr.ece.autoloc.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,6 +18,7 @@ import java.util.Set;
         // speeds up the "is this car already booked on these dates?" check
         @Index(name = "idx_reservation_dispo", columnList = "id_vehicule, statut, date_debut, date_fin")
 })
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -46,15 +49,16 @@ public class Reservation {
     private int nbProlongations;
 
     /**
-     * 0..* reservations -> 1 client. EAGER: always displayed with the reservation.
+     * 0..* reservations -> 1 client. Owning side (foreign key id_client).
+     * LAZY: the reservation lists load the client with @EntityGraph (one query with a JOIN).
      * No cascade: deleting a reservation must never delete the client.
      */
-    @ManyToOne(optional = false, fetch = FetchType.EAGER)
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "id_client", nullable = false)
     private Client client;
 
-    /** 0..* reservations -> 1 vehicle. EAGER, no cascade (same reasons). */
-    @ManyToOne(optional = false, fetch = FetchType.EAGER)
+    /** 0..* reservations -> 1 vehicle. Owning side, LAZY + @EntityGraph, no cascade (same reasons). */
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "id_vehicule", nullable = false)
     private Vehicule vehicule;
 
@@ -70,4 +74,14 @@ public class Reservation {
             joinColumns = @JoinColumn(name = "id_reservation"),
             inverseJoinColumns = @JoinColumn(name = "id_equipement"))
     private Set<Equipement> equipements = new HashSet<>();
+
+    /**
+     * 1 reservation <-> 0..1 contract: inverse side of Contrat.reservation (the contract holds the foreign key).
+     * cascade ALL: the contract follows the life of its reservation (saved and deleted with it).
+     * LAZY is requested, but Hibernate cannot make an inverse one-to-one lazy without bytecode enhancement:
+     * the reservation lists therefore load it in the same JOIN query (@EntityGraph "contrat").
+     */
+    @JsonIgnore
+    @OneToOne(mappedBy = "reservation", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private Contrat contrat;
 }

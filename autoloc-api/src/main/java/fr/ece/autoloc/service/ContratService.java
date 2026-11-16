@@ -53,6 +53,7 @@ public class ContratService {
         c.setDateSignature(LocalDate.now(clock));
         c.setMontantTotal(r.getMontantTotal());
         c.setValide(true);
+        r.setContrat(c);                 // keep both sides of the one-to-one in sync
         contratRepository.save(c);
     }
 

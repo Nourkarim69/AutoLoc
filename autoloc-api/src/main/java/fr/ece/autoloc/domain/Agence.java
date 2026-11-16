@@ -1,6 +1,7 @@
 package fr.ece.autoloc.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,6 +12,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "agence")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -40,6 +42,14 @@ public class Agence {
     @JsonIgnore
     @OneToMany(mappedBy = "agence", fetch = FetchType.LAZY)
     private List<Vehicule> vehicules = new ArrayList<>();
+
+    /**
+     * Inverse side of Employe.agence (1 agency -> 0..* employees).
+     * LAZY, no cascade: employees are managed on their own.
+     */
+    @JsonIgnore
+    @OneToMany(mappedBy = "agence", fetch = FetchType.LAZY)
+    private List<Employe> employes = new ArrayList<>();
 
     public Agence(String nom, String ville, String adresse, String telephone) {
         this.nom = nom;

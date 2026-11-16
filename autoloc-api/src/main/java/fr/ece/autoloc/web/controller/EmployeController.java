@@ -9,6 +9,7 @@ import fr.ece.autoloc.web.dto.EmployeRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -41,6 +42,7 @@ public class EmployeController {
     }
 
     @PostMapping
+    @Transactional
     @ResponseStatus(HttpStatus.CREATED)
     public Employe create(@Valid @RequestBody EmployeRequest request) {
         if (request.motDePasse() == null || request.motDePasse().isBlank()) {
@@ -52,6 +54,7 @@ public class EmployeController {
     }
 
     @PutMapping("/{id}")
+    @Transactional
     public Employe update(@PathVariable Long id, @Valid @RequestBody EmployeRequest request) {
         Employe e = get(id);
         apply(e, request);

@@ -28,10 +28,10 @@ public class Maintenance {
     private String description;
 
     /**
-     * Owning side (0..* maintenances -> 1 vehicle). EAGER: the car is always shown with the maintenance.
+     * Owning side (0..* maintenances -> 1 vehicle). LAZY: the maintenance list loads the car with @EntityGraph.
      * No cascade: saving or deleting a maintenance must never touch the car.
      */
-    @ManyToOne(optional = false, fetch = FetchType.EAGER)
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "id_vehicule", nullable = false)
     private Vehicule vehicule;
 }

@@ -13,17 +13,23 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
 
     /** One query with JOINs for client, vehicle and agency (no N+1); options are batch-loaded. */
-    @EntityGraph(type = EntityGraph.EntityGraphType.LOAD, attributePaths = {"client", "vehicule", "vehicule.agence"})
+    @EntityGraph(type = EntityGraph.EntityGraphType.LOAD, attributePaths = {"client", "vehicule", "vehicule.agence", "contrat"})
     List<Reservation> findByClientIdClientOrderByDateDebutDesc(Long idClient);
 
     /** Admin list, one page at a time. */
     @Override
-    @EntityGraph(type = EntityGraph.EntityGraphType.LOAD, attributePaths = {"client", "vehicule", "vehicule.agence"})
+    @EntityGraph(type = EntityGraph.EntityGraphType.LOAD, attributePaths = {"client", "vehicule", "vehicule.agence", "contrat"})
     Page<Reservation> findAll(Pageable pageable);
+
+    /** One reservation with everything the JSON and the business rules need (associations are LAZY). */
+    @Override
+    @EntityGraph(type = EntityGraph.EntityGraphType.LOAD, attributePaths = {"client", "vehicule", "vehicule.agence", "contrat"})
+    Optional<Reservation> findById(Long id);
 
     List<Reservation> findByVehiculeIdVehiculeAndStatutInAndDateFinAfterOrderByDateDebut(
             Long idVehicule, Collection<StatutReservation> statuts, LocalDate after);

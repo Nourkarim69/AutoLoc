@@ -1,6 +1,7 @@
 package fr.ece.autoloc.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,6 +17,7 @@ import java.util.List;
  */
 @Entity
 @Table(name = "contrat")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -36,9 +38,9 @@ public class Contrat {
 
     /**
      * 1 reservation <-> 0..1 contract. Owning side here (unique foreign key id_reservation).
-     * EAGER: a contract is meaningless without its reservation details. No cascade.
+     * LAZY: the contract lists load the reservation with @EntityGraph. The cascade is on the Reservation side.
      */
-    @OneToOne(optional = false, fetch = FetchType.EAGER)
+    @OneToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "id_reservation", nullable = false, unique = true)
     private Reservation reservation;
 

@@ -10,12 +10,17 @@ import java.util.Optional;
 
 public interface ContratRepository extends JpaRepository<Contrat, Long> {
 
+    @EntityGraph(type = EntityGraph.EntityGraphType.LOAD, attributePaths = {"reservation", "reservation.client", "reservation.vehicule", "reservation.vehicule.agence"})
     Optional<Contrat> findByReservationIdReservation(Long idReservation);
 
-    @EntityGraph(type = EntityGraph.EntityGraphType.LOAD, attributePaths = {"reservation", "reservation.client", "reservation.vehicule"})
+    @Override
+    @EntityGraph(type = EntityGraph.EntityGraphType.LOAD, attributePaths = {"reservation", "reservation.client", "reservation.vehicule", "reservation.vehicule.agence"})
+    Optional<Contrat> findById(Long id);
+
+    @EntityGraph(type = EntityGraph.EntityGraphType.LOAD, attributePaths = {"reservation", "reservation.client", "reservation.vehicule", "reservation.vehicule.agence"})
     List<Contrat> findByReservationClientIdClientOrderByDateSignatureDesc(Long idClient);
 
     @Override
-    @EntityGraph(type = EntityGraph.EntityGraphType.LOAD, attributePaths = {"reservation", "reservation.client", "reservation.vehicule"})
+    @EntityGraph(type = EntityGraph.EntityGraphType.LOAD, attributePaths = {"reservation", "reservation.client", "reservation.vehicule", "reservation.vehicule.agence"})
     List<Contrat> findAll(Sort sort);
 }

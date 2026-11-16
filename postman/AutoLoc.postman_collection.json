@@ -275,6 +275,26 @@
             },
             "description": ""
           }
+        },
+        {
+          "name": "Équipements d'un véhicule",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/vehicules/1/equipements",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "vehicules",
+                "1",
+                "equipements"
+              ]
+            },
+            "description": ""
+          }
         }
       ]
     },
@@ -885,6 +905,286 @@
               ]
             },
             "description": ""
+          }
+        },
+        {
+          "name": "Définir les équipements d'un véhicule",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/vehicules/1/equipements",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "vehicules",
+                "1",
+                "equipements"
+              ]
+            },
+            "description": "Liste des id d'équipements (admin connecté).",
+            "body": {
+              "mode": "raw",
+              "raw": "[1, 3]"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Spring Security (HTTP Basic)",
+      "item": [
+        {
+          "name": "Ping public (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/ping",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "ping"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Hello sans identifiants (401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hello",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "hello"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Hello student (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hello",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "hello"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "student",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "student123",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Hello admin (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hello",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "hello"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "admin",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "admin123",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Rapport admin sans identifiants (401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/report",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "report"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Rapport admin student (403)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/report",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "report"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "student",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "student123",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Rapport admin admin (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/report",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "report"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "admin",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "admin123",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Monitoring (Actuator)",
+      "item": [
+        {
+          "name": "Santé",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/actuator/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "actuator",
+                "health"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Métriques Prometheus",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/actuator/prometheus",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "actuator",
+                "prometheus"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
           }
         }
       ]

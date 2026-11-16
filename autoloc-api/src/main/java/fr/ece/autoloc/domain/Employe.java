@@ -36,8 +36,8 @@ public class Employe {
     @Column(nullable = false, length = 100)
     private String motDePasse;
 
-    /** Agency the employee works in (0..* employees -> 0..1 agency). EAGER, no cascade. */
-    @ManyToOne(fetch = FetchType.EAGER)
+    /** Agency the employee works in (0..* employees -> 0..1 agency). Owning side, LAZY, no cascade. */
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_agence")
     private Agence agence;
 

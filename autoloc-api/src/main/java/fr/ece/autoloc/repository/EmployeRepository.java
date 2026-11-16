@@ -15,5 +15,9 @@ public interface EmployeRepository extends JpaRepository<Employe, Long> {
 
     @Override
     @EntityGraph(type = EntityGraph.EntityGraphType.LOAD, attributePaths = "agence")
+    Optional<Employe> findById(Long id);
+
+    @Override
+    @EntityGraph(type = EntityGraph.EntityGraphType.LOAD, attributePaths = "agence")
     List<Employe> findAll();
 }

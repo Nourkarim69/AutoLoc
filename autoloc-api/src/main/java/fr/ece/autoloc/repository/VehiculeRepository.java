@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface VehiculeRepository extends JpaRepository<Vehicule, Long> {
 
@@ -13,6 +14,10 @@ public interface VehiculeRepository extends JpaRepository<Vehicule, Long> {
     @Override
     @EntityGraph(type = EntityGraph.EntityGraphType.LOAD, attributePaths = "agence")
     List<Vehicule> findAll();
+
+    @Override
+    @EntityGraph(type = EntityGraph.EntityGraphType.LOAD, attributePaths = "agence")
+    Optional<Vehicule> findById(Long id);
 
     long countByStatut(StatutVehicule statut);
 }
